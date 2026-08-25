@@ -321,3 +321,60 @@ async def start_bot():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+@app.get("/api/admin/check")
+async def admin_check(telegram_id: int):
+    from database import AsyncSessionLocal, Admin
+    from sqlalchemy import select
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(Admin).where(Admin.user_id == telegram_id))
+        admin = result.scalar_one_or_none()
+        return {"is_admin": admin is not None}
+
+@app.get("/api/admin/dashboard")
+async def admin_dashboard(telegram_id: int):
+    if not await is_admin(telegram_id):
+        raise HTTPException(403, "Admin emas")
+    async with AsyncSessionLocal() as session:
+        users = await session.execute(select(func.count()).select_from(User))
+        taxi_ads = await session.execute(select(func.count()).select_from(TaxiAd))
+        orders = await session.execute(select(func.count()).select_from(Order))
+        return {
+            "users": users.scalar(),
+            "taxi_ads": taxi_ads.scalar(),
+            "orders": orders.scalar()
+        }
+
+@app.get("/api/admin/users")
+async def admin_users(telegram_id: int):
+    if not await is_admin(telegram_id):
+        raise HTTPException(403, "Admin emas")
+    async with AsyncSessionLocal() as session:
+        users = await session.execute(select(User))
+        users = users.scalars().all()
+        return [{"id": u.id, "name": u.first_name, "phone": u.phone, "rating": u.rating} for u in users]
+
+@app.get("/api/admin/complaints")
+async def admin_complaints(telegram_id: int):
+    if not await is_admin(telegram_id):
+        raise HTTPException(403, "Admin emas")
+    async with AsyncSessionLocal() as session:
+        complaints = await session.execute(select(Complaint).order_by(Complaint.created_at.desc()))
+        complaints = complaints.scalars().all()
+        return [{"id": c.id, "user_id": c.user_id, "text": c.text, "created": c.created_at.isoformat()} for c in complaints]
+
+@app.post("/api/admin/broadcast")
+async def admin_broadcast(data: dict, telegram_id: int):
+    if not await is_admin(telegram_id):
+        raise HTTPException(403, "Admin emas")
+    async with AsyncSessionLocal() as session:
+        users = await session.execute(select(User))
+        users = users.scalars().all()
+        sent = 0
+        for user in users:
+            try:
+                await bot.send_message(user.telegram_id, data["text"])
+                sent += 1
+            except:
+                pass
+        return {"sent": sent}
