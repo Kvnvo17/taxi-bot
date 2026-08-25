@@ -17,29 +17,17 @@
 
         <!-- MAIN CONTENT -->
         <div id="main">
-            <!-- ========== BOSH SAHIFA ========== -->
+            <!-- BOSH SAHIFA -->
             <div id="page-home" class="page active">
                 <div class="card-grid">
-                    <div class="card" data-action="driver">
-                        <span class="icon">🚖</span>
-                        <span class="label">Men taksisman</span>
-                    </div>
-                    <div class="card" data-action="passenger">
-                        <span class="icon">🧍</span>
-                        <span class="label">Men yo‘lovchiman</span>
-                    </div>
-                    <div class="card" data-action="parcel_receive">
-                        <span class="icon">📦</span>
-                        <span class="label">Pochta olaman</span>
-                    </div>
-                    <div class="card" data-action="parcel_send">
-                        <span class="icon">📦</span>
-                        <span class="label">Pochta yuboraman</span>
-                    </div>
+                    <div class="card" data-action="driver"><span class="icon">🚖</span><span class="label">Men taksisman</span></div>
+                    <div class="card" data-action="passenger"><span class="icon">🧍</span><span class="label">Men yo‘lovchiman</span></div>
+                    <div class="card" data-action="parcel_receive"><span class="icon">📦</span><span class="label">Pochta olaman</span></div>
+                    <div class="card" data-action="parcel_send"><span class="icon">📦</span><span class="label">Pochta yuboraman</span></div>
                 </div>
             </div>
 
-            <!-- ========== E'LONLAR ========== -->
+            <!-- E'LONLAR -->
             <div id="page-ads" class="page">
                 <h2>📋 E’lonlar</h2>
                 <div style="display:flex; gap:8px; margin-bottom:12px;">
@@ -49,7 +37,7 @@
                 <div id="ads-list"></div>
             </div>
 
-            <!-- ========== BUYURTMALAR ========== -->
+            <!-- BUYURTMALAR -->
             <div id="page-orders" class="page">
                 <h2>📦 Buyurtmalar</h2>
                 <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -61,17 +49,34 @@
                 <div id="orders-list"></div>
             </div>
 
-            <!-- ========== PROFIL ========== -->
+            <!-- PROFIL -->
             <div id="page-profile" class="page">
                 <h2>👤 Profil</h2>
                 <div id="profile-content"></div>
             </div>
 
-            <!-- ========== FORMA (qo'shimcha) ========== -->
+            <!-- FORMA SAHIFASI -->
             <div id="page-form" class="page">
                 <h2 id="form-title">Forma</h2>
                 <div id="form-body"></div>
                 <button id="form-back" class="back-btn">🔙 Orqaga</button>
+            </div>
+
+            <!-- ADMIN PANEL (faqat admin ko‘radi) -->
+            <div id="page-admin" class="page">
+                <h2>👑 Admin Panel</h2>
+                <div id="admin-content">
+                    <div class="admin-stats">
+                        <div class="stat-card">👤 Foydalanuvchilar: <span id="stat-users">0</span></div>
+                        <div class="stat-card">🚖 Taksi e’lonlari: <span id="stat-taxi">0</span></div>
+                        <div class="stat-card">📦 Buyurtmalar: <span id="stat-orders">0</span></div>
+                    </div>
+                    <button onclick="loadAdminUsers()">👤 Foydalanuvchilar</button>
+                    <button onclick="loadAdminComplaints()">📢 Shikoyatlar</button>
+                    <button onclick="sendBroadcast()">📣 Reklama yuborish</button>
+                    <div id="admin-data"></div>
+                </div>
+                <button id="admin-back" class="back-btn">🔙 Orqaga</button>
             </div>
         </div>
 
@@ -81,6 +86,7 @@
             <button class="nav-btn" data-page="ads">📋 E’lonlar</button>
             <button class="nav-btn" data-page="orders">📦 Buyurtmalar</button>
             <button class="nav-btn" data-page="profile">👤 Profil</button>
+            <!-- Admin tugmasi dinamik qo‘shiladi -->
         </div>
     </div>
 
