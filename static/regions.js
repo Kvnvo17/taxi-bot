@@ -1,10 +1,9 @@
 // O'zbekiston viloyatlari, tumanlari va mahallalari
-// Har bir tuman uchun "Hamma" mahalla ham mavjud
 const regions = {
   "Toshkent shahri": {
     districts: {
-      "Bektemir": ["Hamma", "Bektemir-1", "Bektemir-2", "Bektemir-3"],
-      "Chilonzor": ["Hamma", "Chilonzor-1", "Chilonzor-2", "Chilonzor-3", "Chilonzor-4"],
+      "Bektemir": ["Hamma", "Bektemir-1", "Bektemir-2"],
+      "Chilonzor": ["Hamma", "Chilonzor-1", "Chilonzor-2", "Chilonzor-3"],
       "Yunusobod": ["Hamma", "Yunusobod-1", "Yunusobod-2", "Yunusobod-3", "Yunusobod-4"],
       "Mirzo Ulug'bek": ["Hamma", "Mirzo-1", "Mirzo-2", "Mirzo-3"],
       "Olmazor": ["Hamma", "Olmazor-1", "Olmazor-2"],
@@ -32,32 +31,6 @@ const regions = {
       "Zangiota": ["Hamma", "Zangiota-1"]
     }
   },
-  "Sirdaryo": {
-    districts: {
-      "Boyovut": ["Hamma", "Boyovut-1"],
-      "Guliston": ["Hamma", "Guliston-1"],
-      "Mirzaobod": ["Hamma", "Mirzaobod-1"],
-      "Oqoltin": ["Hamma", "Oqoltin-1"],
-      "Sayxunobod": ["Hamma", "Sayxunobod-1"],
-      "Sirdaryo": ["Hamma", "Sirdaryo-1"],
-      "Xovos": ["Hamma", "Xovos-1"]
-    }
-  },
-  "Jizzax": {
-    districts: {
-      "Arnasoy": ["Hamma", "Arnasoy-1"],
-      "Baxmal": ["Hamma", "Baxmal-1"],
-      "Do'stlik": ["Hamma", "Do'stlik-1"],
-      "Forish": ["Hamma", "Forish-1"],
-      "G'allaorol": ["Hamma", "G'allaorol-1"],
-      "Jizzax": ["Hamma", "Jizzax-1"],
-      "Mirzacho'l": ["Hamma", "Mirzacho'l-1"],
-      "Paxtakor": ["Hamma", "Paxtakor-1"],
-      "Yangiobod": ["Hamma", "Yangiobod-1"],
-      "Zafarobod": ["Hamma", "Zafarobod-1"],
-      "Zomin": ["Hamma", "Zomin-1"]
-    }
-  },
   "Samarqand": {
     districts: {
       "Bulung'ur": ["Hamma", "Bulung'ur-1"],
@@ -74,16 +47,17 @@ const regions = {
       "Urgut": ["Hamma", "Urgut-1"]
     }
   },
-  "Navoiy": {
+  "Buxoro": {
     districts: {
-      "Karmana": ["Hamma", "Karmana-1"],
-      "Konimex": ["Hamma", "Konimex-1"],
-      "Navbahor": ["Hamma", "Navbahor-1"],
-      "Nurota": ["Hamma", "Nurota-1"],
-      "Qiziltepa": ["Hamma", "Qiziltepa-1"],
-      "Tomdiy": ["Hamma", "Tomdiy-1"],
-      "Uchquduq": ["Hamma", "Uchquduq-1"],
-      "Xatirchi": ["Hamma", "Xatirchi-1"]
+      "Buxoro": ["Hamma", "Buxoro-1"],
+      "G'ijduvon": ["Hamma", "G'ijduvon-1"],
+      "Jondor": ["Hamma", "Jondor-1"],
+      "Kogon": ["Hamma", "Kogon-1"],
+      "Olot": ["Hamma", "Olot-1"],
+      "Peshku": ["Hamma", "Peshku-1"],
+      "Romitan": ["Hamma", "Romitan-1"],
+      "Shofirkon": ["Hamma", "Shofirkon-1"],
+      "Vobkent": ["Hamma", "Vobkent-1"]
     }
   },
   "Qashqadaryo": {
@@ -116,19 +90,6 @@ const regions = {
       "Shorchi": ["Hamma", "Shorchi-1"],
       "Termiz": ["Hamma", "Termiz-1"],
       "Uzun": ["Hamma", "Uzun-1"]
-    }
-  },
-  "Buxoro": {
-    districts: {
-      "Buxoro": ["Hamma", "Buxoro-1"],
-      "G'ijduvon": ["Hamma", "G'ijduvon-1"],
-      "Jondor": ["Hamma", "Jondor-1"],
-      "Kogon": ["Hamma", "Kogon-1"],
-      "Olot": ["Hamma", "Olot-1"],
-      "Peshku": ["Hamma", "Peshku-1"],
-      "Romitan": ["Hamma", "Romitan-1"],
-      "Shofirkon": ["Hamma", "Shofirkon-1"],
-      "Vobkent": ["Hamma", "Vobkent-1"]
     }
   },
   "Xorazm": {
@@ -195,6 +156,44 @@ const regions = {
       "Yozyovon": ["Hamma", "Yozyovon-1"]
     }
   },
+  "Sirdaryo": {
+    districts: {
+      "Boyovut": ["Hamma", "Boyovut-1"],
+      "Guliston": ["Hamma", "Guliston-1"],
+      "Mirzaobod": ["Hamma", "Mirzaobod-1"],
+      "Oqoltin": ["Hamma", "Oqoltin-1"],
+      "Sayxunobod": ["Hamma", "Sayxunobod-1"],
+      "Sirdaryo": ["Hamma", "Sirdaryo-1"],
+      "Xovos": ["Hamma", "Xovos-1"]
+    }
+  },
+  "Jizzax": {
+    districts: {
+      "Arnasoy": ["Hamma", "Arnasoy-1"],
+      "Baxmal": ["Hamma", "Baxmal-1"],
+      "Do'stlik": ["Hamma", "Do'stlik-1"],
+      "Forish": ["Hamma", "Forish-1"],
+      "G'allaorol": ["Hamma", "G'allaorol-1"],
+      "Jizzax": ["Hamma", "Jizzax-1"],
+      "Mirzacho'l": ["Hamma", "Mirzacho'l-1"],
+      "Paxtakor": ["Hamma", "Paxtakor-1"],
+      "Yangiobod": ["Hamma", "Yangiobod-1"],
+      "Zafarobod": ["Hamma", "Zafarobod-1"],
+      "Zomin": ["Hamma", "Zomin-1"]
+    }
+  },
+  "Navoiy": {
+    districts: {
+      "Karmana": ["Hamma", "Karmana-1"],
+      "Konimex": ["Hamma", "Konimex-1"],
+      "Navbahor": ["Hamma", "Navbahor-1"],
+      "Nurota": ["Hamma", "Nurota-1"],
+      "Qiziltepa": ["Hamma", "Qiziltepa-1"],
+      "Tomdiy": ["Hamma", "Tomdiy-1"],
+      "Uchquduq": ["Hamma", "Uchquduq-1"],
+      "Xatirchi": ["Hamma", "Xatirchi-1"]
+    }
+  },
   "Qoraqalpog'iston": {
     districts: {
       "Amudaryo": ["Hamma", "Amudaryo-1"],
@@ -215,5 +214,4 @@ const regions = {
   }
 };
 
-// Viloyatlar ro'yxati (boshida "Hamma" bo'ladi)
 const regionNames = ["Hamma", ...Object.keys(regions)];
