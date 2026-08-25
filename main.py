@@ -248,7 +248,7 @@ async def create_order(order: OrderCreate):
         await bot.send_message(
             passenger.telegram_id,
             f"✅ Buyurtma qabul qilindi!\n\n"
-            f"Haydovchi: {driver.first_name if driver else 'Noma'lum'}\n"
+            f"Haydovchi: {driver.first_name if driver else 'Noma\'lum'}\n"
             f"Telefon: {ad.phone}\n"
             f"Iltimos, haydovchi bilan bog‘laning."
         )
