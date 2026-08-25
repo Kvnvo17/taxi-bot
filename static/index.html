@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taksi Raqami</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div id="header">
+            <h1>🚖 Taksi Raqami</h1>
+            <div id="theme-toggle">🌓</div>
+        </div>
+        <div id="main">
+            <!-- Bosh sahifa -->
+            <div id="page-home" class="page active">
+                <div class="card-grid">
+                    <div class="card" data-action="driver">
+                        <span class="icon">🚖</span>
+                        <span class="label">Men taksisman</span>
+                    </div>
+                    <div class="card" data-action="passenger">
+                        <span class="icon">🧍</span>
+                        <span class="label">Men yo‘lovchiman</span>
+                    </div>
+                    <div class="card" data-action="parcel_receive">
+                        <span class="icon">📦</span>
+                        <span class="label">Pochta olaman</span>
+                    </div>
+                    <div class="card" data-action="parcel_send">
+                        <span class="icon">📦</span>
+                        <span class="label">Pochta yuboraman</span>
+                    </div>
+                </div>
+            </div>
+            <!-- E’lonlar sahifasi -->
+            <div id="page-ads" class="page">
+                <h2>📋 E’lonlar</h2>
+                <div id="ads-list"></div>
+            </div>
+            <!-- Buyurtmalar sahifasi -->
+            <div id="page-orders" class="page">
+                <h2>📦 Buyurtmalar</h2>
+                <div id="orders-list"></div>
+            </div>
+            <!-- Profil sahifasi -->
+            <div id="page-profile" class="page">
+                <h2>👤 Profil</h2>
+                <div id="profile-content"></div>
+            </div>
+        </div>
+        <div id="bottom-nav">
+            <button class="nav-btn active" data-page="home">🏠 Bosh</button>
+            <button class="nav-btn" data-page="ads">📋 E’lonlar</button>
+            <button class="nav-btn" data-page="orders">📦 Buyurtmalar</button>
+            <button class="nav-btn" data-page="profile">👤 Profil</button>
+        </div>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>
