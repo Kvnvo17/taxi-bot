@@ -1,5 +1,5 @@
 // ============================================================
-// Taksi Raqami Web App – Asosiy JavaScript
+// Taksi Raqami Web App – TO‘LIQ JAVASCRIPT
 // ============================================================
 
 const tg = window.Telegram.WebApp;
@@ -32,12 +32,32 @@ function setTheme(theme) {
         body: JSON.stringify({ telegram_id: user.id, theme })
     }).catch(() => {});
 }
-document.getElementById('theme-toggle').addEventListener('click', () => {
-    setTheme(currentTheme === 'light' ? 'dark' : 'light');
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.getElementById('theme-toggle');
+    if (toggle) {
+        toggle.addEventListener('click', () => {
+            setTheme(currentTheme === 'light' ? 'dark' : 'light');
+        });
+    }
 });
 
 // ---------- NAVIGATION ----------
-const navBtns = document.querySelectorAll('.nav-btn');
+document.addEventListener('DOMContentLoaded', function() {
+    const navBtns = document.querySelectorAll('.nav-btn');
+    navBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const page = this.dataset.page;
+            showPage(page);
+        });
+    });
+
+    const formBack = document.getElementById('form-back');
+    if (formBack) formBack.addEventListener('click', () => showPage('home'));
+    
+    const resultBack = document.getElementById('order-result-back');
+    if (resultBack) resultBack.addEventListener('click', () => showPage('home'));
+});
+
 const pages = {
     home: document.getElementById('page-home'),
     ads: document.getElementById('page-ads'),
@@ -49,21 +69,15 @@ const pages = {
 
 function showPage(name) {
     Object.keys(pages).forEach(key => {
-        pages[key].classList.toggle('active', key === name);
+        if (pages[key]) pages[key].classList.toggle('active', key === name);
     });
-    navBtns.forEach(btn => {
+    document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.page === name);
     });
     if (name === 'profile') loadProfile();
     if (name === 'orders') loadOrders();
     if (name === 'ads') loadAds();
 }
-navBtns.forEach(btn => {
-    btn.addEventListener('click', () => showPage(btn.dataset.page));
-});
-
-document.getElementById('form-back').addEventListener('click', () => showPage('home'));
-document.getElementById('order-result-back').addEventListener('click', () => showPage('home'));
 
 // ---------- DROPDOWN FUNKSIYALARI ----------
 function updateDistricts(prefix) {
@@ -71,7 +85,7 @@ function updateDistricts(prefix) {
     const districtSelect = document.getElementById(`${prefix}_district`);
     if (!regionSelect || !districtSelect) return;
     const region = regionSelect.value;
-    if (region === 'Hamma') {
+    if (region === 'Hamma' || !regions[region]) {
         districtSelect.innerHTML = '<option value="Hamma">Hamma</option>';
         updateMahallas(prefix);
         return;
@@ -91,7 +105,7 @@ function updateMahallas(prefix) {
     if (!regionSelect || !districtSelect || !mahallaSelect) return;
     const region = regionSelect.value;
     const district = districtSelect.value;
-    if (region === 'Hamma' || district === 'Hamma') {
+    if (region === 'Hamma' || district === 'Hamma' || !regions[region]) {
         mahallaSelect.innerHTML = '<option value="Hamma">Hamma</option>';
         return;
     }
@@ -121,12 +135,14 @@ function formatPhone(phone) {
 }
 
 // ---------- KARTALAR ----------
-document.querySelectorAll('.card').forEach(card => {
-    card.addEventListener('click', () => {
-        const action = card.dataset.action;
-        if (action === 'driver') showForm('taxi');
-        else if (action === 'passenger') showForm('search');
-        else if (action === 'parcel_send') showForm('parcel_send');
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('click', function() {
+            const action = this.dataset.action;
+            if (action === 'driver') showForm('taxi');
+            else if (action === 'passenger') showForm('search');
+            else if (action === 'parcel_send') showForm('parcel_send');
+        });
     });
 });
 
@@ -134,6 +150,8 @@ document.querySelectorAll('.card').forEach(card => {
 function showForm(type) {
     const formBody = document.getElementById('form-body');
     const formTitle = document.getElementById('form-title');
+    if (!formBody || !formTitle) return;
+    
     const regionOptions = regionNames.map(r => `<option value="${r}">${r}</option>`).join('');
     let html = '';
 
@@ -321,16 +339,18 @@ function showForm(type) {
 }
 
 // ---------- TAKSI E'LON JOYLASH ----------
-async function submitTaxiAd() {
+window.submitTaxiAd = async function() {
     const phoneInput = document.getElementById('phone');
-    const phone = phoneInput.value.trim();
+    const phone = phoneInput ? phoneInput.value.trim() : '';
     
     if (!validatePhone(phone)) {
-        document.getElementById('phone-error').style.display = 'block';
-        phoneInput.focus();
+        const err = document.getElementById('phone-error');
+        if (err) err.style.display = 'block';
+        if (phoneInput) phoneInput.focus();
         return;
     }
-    document.getElementById('phone-error').style.display = 'none';
+    const err = document.getElementById('phone-error');
+    if (err) err.style.display = 'none';
     
     const from_region = document.getElementById('from_region').value;
     const to_region = document.getElementById('to_region').value;
@@ -366,10 +386,10 @@ async function submitTaxiAd() {
     } catch (e) {
         alert('❌ Xatolik: ' + e.message);
     }
-}
+};
 
 // ---------- YO'LOVCHI QIDIRISH ----------
-async function searchTaxi() {
+window.searchTaxi = async function() {
     const from_region = document.getElementById('search_from_region').value;
     const to_region = document.getElementById('search_to_region').value;
     if (from_region === to_region && from_region !== 'Hamma') {
@@ -390,13 +410,14 @@ async function searchTaxi() {
     try {
         const results = await apiCall(`/api/taxi/search?from_location=${encodeURIComponent(JSON.stringify(from_loc))}&to_location=${encodeURIComponent(JSON.stringify(to_loc))}&people=${people}`);
         const container = document.getElementById('search-results');
+        if (!container) return;
         if (results.length === 0) {
             container.innerHTML = '<p>🔔 Hozircha mos taksi topilmadi.</p>';
             return;
         }
         container.innerHTML = results.map(ad => `
             <div class="result-item">
-                <div class="row"><span>🚗 ${ad.car_name}</span><span>⭐ ${ad.rating || 0}</span></div>
+                <div class="row"><span>🚗 ${ad.car_name || 'Noma\'lum'}</span><span>⭐ ${ad.rating || 0}</span></div>
                 <div class="row"><span>📍 ${ad.from} → ${ad.to}</span></div>
                 <div class="row"><span>⏰ ${ad.wait_time} daqiqa</span><span>💺 ${ad.seats}</span></div>
                 <div class="row"><span>💰 ${ad.price} so‘m</span><span>📦 ${ad.takes_parcel ? 'Ha' : 'Yo‘q'}</span></div>
@@ -409,20 +430,20 @@ async function searchTaxi() {
     } catch (e) {
         alert('❌ Xatolik: ' + e.message);
     }
-}
+};
 
-// ---------- BUYURTMA BERISH (TAKSI) ----------
-async function orderTaxi(adId) {
+// ---------- BUYURTMA BERISH ----------
+window.orderTaxi = async function(adId) {
     try {
         const ad = await apiCall(`/api/taxi/ad/${adId}`);
         showOrderResult({
-            driver_name: ad.driver_name,
-            driver_phone: ad.phone,
-            driver_rating: ad.rating,
-            from: ad.from,
-            to: ad.to,
-            wait_time: ad.wait_time,
-            price: ad.price,
+            driver_name: ad.driver_name || 'Noma\'lum',
+            driver_phone: ad.phone || '+998901234567',
+            driver_rating: ad.rating || 0,
+            from: ad.from || '—',
+            to: ad.to || '—',
+            wait_time: ad.wait_time || 0,
+            price: ad.price || 0,
             type: 'taksi'
         });
         apiCall('/api/order/create', 'POST', {
@@ -433,15 +454,15 @@ async function orderTaxi(adId) {
     } catch (e) {
         alert('❌ Xatolik: ' + e.message);
     }
-}
+};
 
 // ---------- POCHTA YUBORISH ----------
-async function submitParcelSend() {
+window.submitParcelSend = async function() {
     const phoneInput = document.getElementById('ps_phone');
-    const phone = phoneInput.value.trim();
+    const phone = phoneInput ? phoneInput.value.trim() : '';
     if (!validatePhone(phone)) {
         alert('❌ 9 ta raqam kiriting!');
-        phoneInput.focus();
+        if (phoneInput) phoneInput.focus();
         return;
     }
 
@@ -472,20 +493,20 @@ async function submitParcelSend() {
     } catch (e) {
         alert('❌ Xatolik: ' + e.message);
     }
-}
+};
 
 // ---------- POCHTA BUYURTMA ----------
-async function orderParcel(adId) {
+window.orderParcel = async function(adId) {
     try {
         const ad = await apiCall(`/api/taxi/ad/${adId}`);
         showOrderResult({
-            driver_name: ad.driver_name,
-            driver_phone: ad.phone,
-            driver_rating: ad.rating,
-            from: ad.from,
-            to: ad.to,
-            wait_time: ad.wait_time,
-            price: ad.price,
+            driver_name: ad.driver_name || 'Noma\'lum',
+            driver_phone: ad.phone || '+998901234567',
+            driver_rating: ad.rating || 0,
+            from: ad.from || '—',
+            to: ad.to || '—',
+            wait_time: ad.wait_time || 0,
+            price: ad.price || 0,
             type: 'pochta'
         });
         apiCall('/api/order/create', 'POST', {
@@ -496,11 +517,12 @@ async function orderParcel(adId) {
     } catch (e) {
         alert('❌ Xatolik: ' + e.message);
     }
-}
+};
 
 // ---------- BUYURTMA NATIJASI ----------
 function showOrderResult(data) {
     const container = document.getElementById('order-result-content');
+    if (!container) return;
     container.innerHTML = `
         <div class="order-success">
             <h3>✅ Buyurtma yuborildi!</h3>
@@ -527,7 +549,7 @@ function showOrderResult(data) {
 }
 
 // ---------- NUSXALASH ----------
-function copyPhone(phone) {
+window.copyPhone = function(phone) {
     navigator.clipboard.writeText(phone).then(() => {
         alert('✅ Telefon raqam nusxalandi!');
     }).catch(() => {
@@ -539,22 +561,21 @@ function copyPhone(phone) {
         document.body.removeChild(input);
         alert('✅ Telefon raqam nusxalandi!');
     });
-}
+};
 
 // ---------- E'LONLAR ----------
 async function loadAds() {
     const container = document.getElementById('ads-list');
-    const tab = currentTab;
+    if (!container) return;
     try {
-        let url = '/api/taxi/search?from_location={}&to_location={}&people=1';
-        const data = await apiCall(url);
+        const data = await apiCall('/api/taxi/search?from_location={}&to_location={}&people=1');
         if (data.length === 0) {
             container.innerHTML = '<p>📭 Hozircha e’lonlar yo‘q.</p>';
             return;
         }
         container.innerHTML = data.map(ad => `
             <div class="ad-item">
-                <div><strong>🚗 ${ad.car_name}</strong> ⭐ ${ad.rating || 0}</div>
+                <div><strong>🚗 ${ad.car_name || 'Noma\'lum'}</strong> ⭐ ${ad.rating || 0}</div>
                 <div>📍 ${ad.from} → ${ad.to}</div>
                 <div>⏰ ${ad.wait_time} daqiqa | 💺 ${ad.seats} | 💰 ${ad.price} so‘m</div>
                 <div>📦 ${ad.takes_parcel ? 'Pochta oladi' : 'Pochta olmaydi'}</div>
@@ -570,18 +591,21 @@ async function loadAds() {
 }
 
 // ---------- TABLAR ----------
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        currentTab = this.dataset.tab;
-        loadAds();
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentTab = this.dataset.tab;
+            loadAds();
+        });
     });
 });
 
 // ---------- BUYURTMALAR ----------
 async function loadOrders() {
     const container = document.getElementById('orders-list');
+    if (!container) return;
     try {
         const data = await apiCall(`/api/orders/${user.id}`);
         let filtered = data;
@@ -616,18 +640,21 @@ async function loadOrders() {
 }
 
 // ---------- FILTERLAR ----------
-document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        currentFilter = this.dataset.status;
-        loadOrders();
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentFilter = this.dataset.status;
+            loadOrders();
+        });
     });
 });
 
 // ---------- PROFIL ----------
 async function loadProfile() {
     const container = document.getElementById('profile-content');
+    if (!container) return;
     try {
         const data = await apiCall(`/api/user/${user.id}`);
         container.innerHTML = `
@@ -666,7 +693,7 @@ async function loadProfile() {
     }
 }
 
-function editField(field, currentValue) {
+window.editField = function(field, currentValue) {
     const labels = {
         phone: '📞 Telefon raqam',
         car_name: '🚗 Mashina nomi'
@@ -683,4 +710,174 @@ function editField(field, currentValue) {
         } else {
             payload[field] = newValue;
         }
-        fetch('/
+        fetch('/api/user/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Xatolik');
+            alert('✅ Yangilandi!');
+            loadProfile();
+        })
+        .catch(err => alert('❌ Xatolik: ' + err.message));
+    }
+};
+
+// ---------- TIL TANLASH ----------
+window.editLanguage = function() {
+    const langs = [
+        { code: 'uz', name: '🇺🇿 O\'zbekcha (Lotin)' },
+        { code: 'uz_cyrl', name: '🇺🇿 Ўзбекча (Kirill)' },
+        { code: 'ru', name: '🇷🇺 Русский' },
+        { code: 'en', name: '🇬🇧 English' }
+    ];
+    let html = '<div class="lang-select">';
+    langs.forEach(lang => {
+        html += `
+            <label class="lang-option" style="display:block;padding:10px;margin:4px 0;border-radius:10px;cursor:pointer;">
+                <input type="radio" name="language" value="${lang.code}">
+                ${lang.name}
+            </label>
+        `;
+    });
+    html += `
+        <div class="lang-actions" style="margin-top:16px;">
+            <button onclick="saveLanguage()" class="primary-btn">✅ Saqlash</button>
+            <button onclick="closeModal()" class="back-btn" style="margin-top:8px;">❌ Bekor</button>
+        </div>
+    </div>`;
+    showModal(html);
+};
+
+window.saveLanguage = function() {
+    const selected = document.querySelector('input[name="language"]:checked');
+    if (!selected) return alert('❌ Til tanlang!');
+    const lang = selected.value;
+    fetch('/api/user/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegram_id: user.id, language: lang })
+    })
+    .then(() => {
+        alert('✅ Til yangilandi!');
+        closeModal();
+        loadProfile();
+    })
+    .catch(() => alert('❌ Xatolik'));
+};
+
+// ---------- KO'RINISH TANLASH ----------
+window.editTheme = function() {
+    const html = `
+        <div class="theme-select">
+            <div class="theme-options" style="display:flex;gap:16px;justify-content:center;margin:16px 0;">
+                <div class="theme-card" onclick="selectTheme('light')" style="padding:24px;border-radius:16px;border:2px solid #ddd;cursor:pointer;text-align:center;flex:1;">
+                    <span style="font-size:48px;display:block;">☀️</span>
+                    <span style="font-weight:600;">Light</span>
+                </div>
+                <div class="theme-card" onclick="selectTheme('dark')" style="padding:24px;border-radius:16px;border:2px solid #ddd;cursor:pointer;text-align:center;flex:1;">
+                    <span style="font-size:48px;display:block;">🌙</span>
+                    <span style="font-weight:600;">Dark</span>
+                </div>
+            </div>
+            <div class="theme-actions">
+                <button onclick="saveTheme()" class="primary-btn">✅ Saqlash</button>
+                <button onclick="closeModal()" class="back-btn" style="margin-top:8px;">❌ Bekor</button>
+            </div>
+        </div>
+    `;
+    showModal(html);
+};
+
+window.selectTheme = function(theme) {
+    selectedTheme = theme;
+    document.querySelectorAll('.theme-card').forEach(el => {
+        el.style.borderColor = el.textContent.trim().toLowerCase() === theme ? '#4f46e5' : '#ddd';
+        el.style.background = el.textContent.trim().toLowerCase() === theme ? 'rgba(79,70,229,0.1)' : 'transparent';
+    });
+};
+
+window.saveTheme = function() {
+    fetch('/api/user/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegram_id: user.id, theme: selectedTheme })
+    })
+    .then(() => {
+        alert('✅ Ko‘rinish yangilandi!');
+        setTheme(selectedTheme);
+        closeModal();
+        loadProfile();
+    })
+    .catch(() => alert('❌ Xatolik'));
+};
+
+// ---------- MODAL ----------
+function showModal(html) {
+    const overlay = document.getElementById('modal-overlay');
+    if (!overlay) return;
+    document.getElementById('modal-body').innerHTML = html;
+    overlay.style.display = 'flex';
+}
+window.closeModal = function() {
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) overlay.style.display = 'none';
+};
+document.addEventListener('DOMContentLoaded', function() {
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    }
+});
+
+// ---------- O'Z E'LONLARIM ----------
+window.loadMyAds = async function(type) {
+    const container = document.getElementById('my-ads-list');
+    if (!container) return;
+    try {
+        const url = type === 'taxi' 
+            ? `/api/user/${user.id}/taxi-ads`
+            : `/api/user/${user.id}/parcel-ads`;
+        const data = await apiCall(url);
+        if (data.length === 0) {
+            container.innerHTML = '<p>📭 E’lonlar yo‘q.</p>';
+            return;
+        }
+        container.innerHTML = data.map(ad => `
+            <div class="my-ad-item" style="background:rgba(255,255,255,0.3);border-radius:12px;padding:12px;margin-bottom:8px;">
+                <div><strong>#${ad.id}</strong> ${ad.is_active ? '🟢 Faol' : '🔴 Faol emas'}</div>
+                <div>📍 ${ad.from} → ${ad.to}</div>
+                <div>⏰ ${ad.wait_time || '—'} daqiqa | 💺 ${ad.seats || '—'}</div>
+                <div>💰 ${ad.price || '—'} so‘m</div>
+                <div>📦 ${ad.takes_parcel ? 'Pochta oladi' : 'Pochta olmaydi'}</div>
+                ${ad.is_active ? `<button onclick="deleteMyAd(${ad.id}, '${type}')" style="margin-top:8px;padding:6px 16px;border:none;border-radius:8px;background:#ef4444;color:#fff;cursor:pointer;">❌ O‘chirish</button>` : ''}
+            </div>
+        `).join('');
+    } catch (e) {
+        container.innerHTML = '<p>❌ Xatolik.</p>';
+    }
+};
+
+window.deleteMyAd = async function(adId, type) {
+    if (!confirm('❌ Bu e’lonni o‘chirmoqchimisiz?')) return;
+    try {
+        const url = type === 'taxi' 
+            ? `/api/taxi/ad/${adId}`
+            : `/api/parcel/ad/${adId}`;
+        await apiCall(url, 'DELETE', { telegram_id: user.id });
+        alert('✅ E’lon o‘chirildi!');
+        loadMyAds(type);
+    } catch (e) {
+        alert('❌ Xatolik: ' + e.message);
+    }
+};
+
+// ---------- BOSHLANG'ICH ----------
+document.addEventListener('DOMContentLoaded', function() {
+    showPage('home');
+    loadProfile();
+    loadAds();
+});
