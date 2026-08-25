@@ -1,5 +1,5 @@
 // ============================================================
-// Taksi Raqami Web App – to‘liq JavaScript
+// Taksi Raqami Web App – Asosiy JavaScript
 // ============================================================
 
 const tg = window.Telegram.WebApp;
@@ -8,7 +8,19 @@ const user = tg.initDataUnsafe?.user || { id: 123456, first_name: "Test" };
 let currentTheme = 'light';
 let currentTab = 'taxi';
 let currentFilter = 'all';
-let isAdmin = false;
+let selectedTheme = 'light';
+
+// ---------- API CALL ----------
+async function apiCall(url, method = 'GET', body = null) {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Xatolik ${res.status}`);
+    }
+    return res.json();
+}
 
 // ---------- THEME ----------
 function setTheme(theme) {
@@ -32,7 +44,7 @@ const pages = {
     orders: document.getElementById('page-orders'),
     profile: document.getElementById('page-profile'),
     form: document.getElementById('page-form'),
-    admin: document.getElementById('page-admin')
+    order_result: document.getElementById('page-order-result')
 };
 
 function showPage(name) {
@@ -45,62 +57,29 @@ function showPage(name) {
     if (name === 'profile') loadProfile();
     if (name === 'orders') loadOrders();
     if (name === 'ads') loadAds();
-    if (name === 'admin') loadAdminDashboard();
 }
 navBtns.forEach(btn => {
     btn.addEventListener('click', () => showPage(btn.dataset.page));
 });
 
-// ---------- ADMIN TUGMASI ----------
-async function checkAdmin() {
-    try {
-        const res = await fetch(`/api/admin/check?telegram_id=${user.id}`);
-        const data = await res.json();
-        isAdmin = data.is_admin || false;
-        if (isAdmin) {
-            const nav = document.getElementById('bottom-nav');
-            const btn = document.createElement('button');
-            btn.className = 'nav-btn';
-            btn.dataset.page = 'admin';
-            btn.textContent = '👑 Admin';
-            btn.addEventListener('click', () => showPage('admin'));
-            nav.appendChild(btn);
-        }
-    } catch (e) {
-        console.error('Admin check failed', e);
-    }
-}
+document.getElementById('form-back').addEventListener('click', () => showPage('home'));
+document.getElementById('order-result-back').addEventListener('click', () => showPage('home'));
 
-// ---------- KARTALAR ----------
-document.querySelectorAll('.card').forEach(card => {
-    card.addEventListener('click', () => {
-        const action = card.dataset.action;
-        if (action === 'driver') showForm('taxi');
-        else if (action === 'passenger') showForm('search');
-        else if (action === 'parcel_receive') showForm('parcel_receive');
-        else if (action === 'parcel_send') showForm('parcel_send');
-    });
-});
-
-// ---------- DROPDOWN YORDAMCHI FUNKSIYALARI ----------
-// Bu funksiyalar regions obyekti yuklangan deb hisoblaydi (regions.js)
+// ---------- DROPDOWN FUNKSIYALARI ----------
 function updateDistricts(prefix) {
     const regionSelect = document.getElementById(`${prefix}_region`);
     const districtSelect = document.getElementById(`${prefix}_district`);
     if (!regionSelect || !districtSelect) return;
     const region = regionSelect.value;
     if (region === 'Hamma') {
-        districtSelect.innerHTML = `<option value="Hamma">Hamma</option>`;
+        districtSelect.innerHTML = '<option value="Hamma">Hamma</option>';
         updateMahallas(prefix);
         return;
     }
     const districtData = regions[region]?.districts || {};
     const districtNames = Object.keys(districtData);
-    // "Hamma" ni birinchi qo'shamiz
     let options = '<option value="Hamma">Hamma</option>';
-    districtNames.forEach(d => {
-        options += `<option value="${d}">${d}</option>`;
-    });
+    districtNames.forEach(d => { options += `<option value="${d}">${d}</option>`; });
     districtSelect.innerHTML = options;
     updateMahallas(prefix);
 }
@@ -113,7 +92,7 @@ function updateMahallas(prefix) {
     const region = regionSelect.value;
     const district = districtSelect.value;
     if (region === 'Hamma' || district === 'Hamma') {
-        mahallaSelect.innerHTML = `<option value="Hamma">Hamma</option>`;
+        mahallaSelect.innerHTML = '<option value="Hamma">Hamma</option>';
         return;
     }
     const mahallas = regions[region]?.districts?.[district] || ["Hamma"];
@@ -124,51 +103,88 @@ function updateMahallas(prefix) {
     mahallaSelect.innerHTML = options;
 }
 
-// Pochta olasizmi toggle
 function toggleParcelSize() {
-    const val = document.getElementById('takes_parcel').value;
-    document.getElementById('parcel_size_group').style.display = val === 'true' ? 'block' : 'none';
+    const val = document.getElementById('takes_parcel')?.value;
+    const group = document.getElementById('parcel_size_group');
+    if (group) group.style.display = val === 'true' ? 'block' : 'none';
 }
+
+// ---------- TELEFON VALIDATSIYA ----------
+function validatePhone(phone) {
+    const clean = phone.replace(/\D/g, '');
+    return clean.length === 9;
+}
+
+function formatPhone(phone) {
+    const clean = phone.replace(/\D/g, '');
+    return '+998' + clean;
+}
+
+// ---------- KARTALAR ----------
+document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => {
+        const action = card.dataset.action;
+        if (action === 'driver') showForm('taxi');
+        else if (action === 'passenger') showForm('search');
+        else if (action === 'parcel_send') showForm('parcel_send');
+    });
+});
 
 // ---------- FORMA ----------
 function showForm(type) {
     const formBody = document.getElementById('form-body');
     const formTitle = document.getElementById('form-title');
-    let html = '';
-
-    // Viloyatlar ro'yxatini yaratish
     const regionOptions = regionNames.map(r => `<option value="${r}">${r}</option>`).join('');
+    let html = '';
 
     if (type === 'taxi') {
         formTitle.textContent = '🚖 Taksi e’lonini joylash';
         html = `
             <div class="form-group">
-                <label>⏰ Kutish vaqti (daqiqa)</label>
-                <input type="number" id="wait_time" min="30" max="300" value="30">
+                <label>⏰ Kutish vaqti</label>
+                <select id="wait_time">
+                    <option value="30">30 daqiqa</option>
+                    <option value="60">1 soat</option>
+                    <option value="120">2 soat</option>
+                    <option value="180">3 soat</option>
+                    <option value="240">4 soat</option>
+                    <option value="300">5 soat</option>
+                </select>
             </div>
             <div class="form-group">
-                <label>💺 Jami joy (1–4)</label>
-                <input type="number" id="seats" min="1" max="4" value="1">
+                <label>💺 Jami joy</label>
+                <select id="seats">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                </select>
             </div>
-            <div class="form-group">
-                <label>📍 Qayerdan (Viloyat)</label>
-                <select id="from_region" onchange="updateDistricts('from')">${regionOptions}</select>
+            <div style="border-left:4px solid #4f46e5; padding-left:16px; margin:16px 0;">
+                <h4 style="margin-bottom:12px;">📍 Qayerdan</h4>
+                <div class="form-group">
+                    <label>Viloyat</label>
+                    <select id="from_region" onchange="updateDistricts('from')">${regionOptions}</select>
+                </div>
+                <div class="form-group">
+                    <label>Tuman</label>
+                    <select id="from_district" onchange="updateMahallas('from')"><option value="Hamma">Hamma</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Mahalla</label>
+                    <select id="from_neighborhood"><option value="Hamma">Hamma</option></select>
+                </div>
             </div>
-            <div class="form-group">
-                <label>📍 Tuman</label>
-                <select id="from_district" onchange="updateMahallas('from')"><option value="Hamma">Hamma</option></select>
-            </div>
-            <div class="form-group">
-                <label>📍 Mahalla</label>
-                <select id="from_neighborhood"><option value="Hamma">Hamma</option></select>
-            </div>
-            <div class="form-group">
-                <label>📍 Qayerga (Viloyat)</label>
-                <select id="to_region" onchange="updateDistricts('to')">${regionOptions}</select>
-            </div>
-            <div class="form-group">
-                <label>📍 Tuman</label>
-                <select id="to_district" onchange="updateMahallas('to')"><option value="Hamma">Hamma</option></select>
+            <div style="border-left:4px solid #10b981; padding-left:16px; margin:16px 0;">
+                <h4 style="margin-bottom:12px;">📍 Qayerga</h4>
+                <div class="form-group">
+                    <label>Viloyat</label>
+                    <select id="to_region" onchange="updateDistricts('to')">${regionOptions}</select>
+                </div>
+                <div class="form-group">
+                    <label>Tuman</label>
+                    <select id="to_district"><option value="Hamma">Hamma</option></select>
+                </div>
             </div>
             <div class="form-group">
                 <label>💰 Narx (so‘m)</label>
@@ -198,106 +214,83 @@ function showForm(type) {
             </div>
             <div class="form-group">
                 <label>📞 Telefon</label>
-                <input type="text" id="phone" placeholder="+998901234567">
+                <div class="phone-input">
+                    <span class="phone-prefix">+998</span>
+                    <input type="tel" id="phone" maxlength="9" placeholder="90 123 45 67">
+                </div>
+                <small style="color:#ef4444; display:none;" id="phone-error">❌ 9 ta raqam kiriting!</small>
             </div>
-            <button type="submit" onclick="submitTaxiAd()">✅ E’lonni joylash</button>
+            <button class="primary-btn" onclick="submitTaxiAd()">✅ E’lonni joylash</button>
         `;
         setTimeout(() => {
             updateDistricts('from');
             updateDistricts('to');
         }, 100);
-    }
-    else if (type === 'search') {
+    } else if (type === 'search') {
         formTitle.textContent = '🧍 Yo‘lovchi sifatida qidirish';
         html = `
             <div class="form-group">
-                <label>👥 Necha kishi (1–4)</label>
-                <input type="number" id="people" min="1" max="4" value="1">
+                <label>👥 Necha kishi</label>
+                <select id="people">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                </select>
             </div>
-            <div class="form-group">
-                <label>📍 Qayerdan (Viloyat)</label>
-                <select id="search_from_region" onchange="updateDistricts('search_from')">${regionOptions}</select>
+            <div style="border-left:4px solid #4f46e5; padding-left:16px; margin:16px 0;">
+                <h4 style="margin-bottom:12px;">📍 Qayerdan</h4>
+                <div class="form-group">
+                    <label>Viloyat</label>
+                    <select id="search_from_region" onchange="updateDistricts('search_from')">${regionOptions}</select>
+                </div>
+                <div class="form-group">
+                    <label>Tuman</label>
+                    <select id="search_from_district"><option value="Hamma">Hamma</option></select>
+                </div>
             </div>
-            <div class="form-group">
-                <label>📍 Tuman</label>
-                <select id="search_from_district" onchange="updateMahallas('search_from')"><option value="Hamma">Hamma</option></select>
+            <div style="border-left:4px solid #10b981; padding-left:16px; margin:16px 0;">
+                <h4 style="margin-bottom:12px;">📍 Qayerga</h4>
+                <div class="form-group">
+                    <label>Viloyat</label>
+                    <select id="search_to_region" onchange="updateDistricts('search_to')">${regionOptions}</select>
+                </div>
+                <div class="form-group">
+                    <label>Tuman</label>
+                    <select id="search_to_district"><option value="Hamma">Hamma</option></select>
+                </div>
             </div>
-            <div class="form-group">
-                <label>📍 Qayerga (Viloyat)</label>
-                <select id="search_to_region" onchange="updateDistricts('search_to')">${regionOptions}</select>
-            </div>
-            <div class="form-group">
-                <label>📍 Tuman</label>
-                <select id="search_to_district" onchange="updateMahallas('search_to')"><option value="Hamma">Hamma</option></select>
-            </div>
-            <button type="submit" onclick="searchTaxi()">🔍 Taksi qidirish</button>
+            <button class="primary-btn" onclick="searchTaxi()">🔍 Taksi qidirish</button>
             <div id="search-results" style="margin-top:16px;"></div>
         `;
         setTimeout(() => {
             updateDistricts('search_from');
             updateDistricts('search_to');
         }, 100);
-    }
-    else if (type === 'parcel_receive') {
-        formTitle.textContent = '📦 Pochta olish e’loni';
+    } else if (type === 'parcel_send') {
+        formTitle.textContent = '📦 Pochta yuborish';
         html = `
-            <div class="form-group">
-                <label>📍 Qayerdan (Viloyat)</label>
-                <select id="p_from_region" onchange="updateDistricts('p_from')">${regionOptions}</select>
+            <div style="border-left:4px solid #4f46e5; padding-left:16px; margin:16px 0;">
+                <h4 style="margin-bottom:12px;">📍 Qayerdan</h4>
+                <div class="form-group">
+                    <label>Viloyat</label>
+                    <select id="ps_from_region" onchange="updateDistricts('ps_from')">${regionOptions}</select>
+                </div>
+                <div class="form-group">
+                    <label>Tuman</label>
+                    <select id="ps_from_district"><option value="Hamma">Hamma</option></select>
+                </div>
             </div>
-            <div class="form-group">
-                <label>📍 Tuman</label>
-                <select id="p_from_district" onchange="updateMahallas('p_from')"><option value="Hamma">Hamma</option></select>
-            </div>
-            <div class="form-group">
-                <label>📍 Mahalla</label>
-                <select id="p_from_neighborhood"><option value="Hamma">Hamma</option></select>
-            </div>
-            <div class="form-group">
-                <label>📍 Qayerga (Viloyat)</label>
-                <select id="p_to_region" onchange="updateDistricts('p_to')">${regionOptions}</select>
-            </div>
-            <div class="form-group">
-                <label>📍 Tuman</label>
-                <select id="p_to_district" onchange="updateMahallas('p_to')"><option value="Hamma">Hamma</option></select>
-            </div>
-            <div class="form-group">
-                <label>📦 Hajmi</label>
-                <select id="p_size">
-                    <option value="kichik">Kichik</option>
-                    <option value="o'rta">O‘rta</option>
-                    <option value="katta">Katta</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>📞 Telefon</label>
-                <input type="text" id="p_phone" placeholder="+998901234567">
-            </div>
-            <button type="submit" onclick="submitParcelAd('receive')">✅ E’lon joylash</button>
-        `;
-        setTimeout(() => {
-            updateDistricts('p_from');
-            updateDistricts('p_to');
-        }, 100);
-    }
-    else if (type === 'parcel_send') {
-        formTitle.textContent = '📦 Pochta yuborish — taksi topish';
-        html = `
-            <div class="form-group">
-                <label>📍 Qayerdan (Viloyat)</label>
-                <select id="ps_from_region" onchange="updateDistricts('ps_from')">${regionOptions}</select>
-            </div>
-            <div class="form-group">
-                <label>📍 Tuman</label>
-                <select id="ps_from_district" onchange="updateMahallas('ps_from')"><option value="Hamma">Hamma</option></select>
-            </div>
-            <div class="form-group">
-                <label>📍 Qayerga (Viloyat)</label>
-                <select id="ps_to_region" onchange="updateDistricts('ps_to')">${regionOptions}</select>
-            </div>
-            <div class="form-group">
-                <label>📍 Tuman</label>
-                <select id="ps_to_district" onchange="updateMahallas('ps_to')"><option value="Hamma">Hamma</option></select>
+            <div style="border-left:4px solid #10b981; padding-left:16px; margin:16px 0;">
+                <h4 style="margin-bottom:12px;">📍 Qayerga</h4>
+                <div class="form-group">
+                    <label>Viloyat</label>
+                    <select id="ps_to_region" onchange="updateDistricts('ps_to')">${regionOptions}</select>
+                </div>
+                <div class="form-group">
+                    <label>Tuman</label>
+                    <select id="ps_to_district"><option value="Hamma">Hamma</option></select>
+                </div>
             </div>
             <div class="form-group">
                 <label>📦 Hajmi</label>
@@ -309,9 +302,12 @@ function showForm(type) {
             </div>
             <div class="form-group">
                 <label>📞 Telefon</label>
-                <input type="text" id="ps_phone" placeholder="+998901234567">
+                <div class="phone-input">
+                    <span class="phone-prefix">+998</span>
+                    <input type="tel" id="ps_phone" maxlength="9" placeholder="90 123 45 67">
+                </div>
             </div>
-            <button type="submit" onclick="searchParcelCarriers()">🔍 Pochta oluvchi taksilarni topish</button>
+            <button class="primary-btn" onclick="submitParcelSend()">✅ Yuborish</button>
             <div id="parcel-search-results" style="margin-top:16px;"></div>
         `;
         setTimeout(() => {
@@ -324,33 +320,25 @@ function showForm(type) {
     showPage('form');
 }
 
-// ---------- ORQAGA ----------
-document.getElementById('form-back').addEventListener('click', () => showPage('home'));
-document.getElementById('admin-back')?.addEventListener('click', () => showPage('home'));
-
-// ---------- API CALL ----------
-async function apiCall(url, method = 'GET', body = null) {
-    const opts = {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-    };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(url, opts);
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Xatolik ${res.status}`);
-    }
-    return res.json();
-}
-
 // ---------- TAKSI E'LON JOYLASH ----------
 async function submitTaxiAd() {
+    const phoneInput = document.getElementById('phone');
+    const phone = phoneInput.value.trim();
+    
+    if (!validatePhone(phone)) {
+        document.getElementById('phone-error').style.display = 'block';
+        phoneInput.focus();
+        return;
+    }
+    document.getElementById('phone-error').style.display = 'none';
+    
     const from_region = document.getElementById('from_region').value;
     const to_region = document.getElementById('to_region').value;
     if (from_region === to_region && from_region !== 'Hamma') {
         alert('❌ Qayerdan va qayerga bir xil bo‘lishi mumkin emas!');
         return;
     }
+
     const data = {
         wait_time: parseInt(document.getElementById('wait_time').value),
         seats: parseInt(document.getElementById('seats').value),
@@ -363,16 +351,18 @@ async function submitTaxiAd() {
             region: to_region,
             district: document.getElementById('to_district').value
         },
-        price: parseFloat(document.getElementById('price').value),
+        price: parseFloat(document.getElementById('price').value) || 0,
         negotiable: document.getElementById('negotiable').value === 'true',
         takes_parcel: document.getElementById('takes_parcel').value === 'true',
         parcel_size: document.getElementById('parcel_size')?.value || null,
-        phone: document.getElementById('phone').value
+        phone: formatPhone(phone)
     };
+
     try {
         await apiCall(`/api/taxi/ad?telegram_id=${user.id}`, 'POST', data);
         alert('✅ E’lon muvaffaqiyatli joylandi!');
         showPage('home');
+        loadAds();
     } catch (e) {
         alert('❌ Xatolik: ' + e.message);
     }
@@ -386,6 +376,7 @@ async function searchTaxi() {
         alert('❌ Qayerdan va qayerga bir xil bo‘lishi mumkin emas!');
         return;
     }
+    
     const from_loc = {
         region: from_region,
         district: document.getElementById('search_from_district').value
@@ -395,6 +386,7 @@ async function searchTaxi() {
         district: document.getElementById('search_to_district').value
     };
     const people = parseInt(document.getElementById('people').value);
+
     try {
         const results = await apiCall(`/api/taxi/search?from_location=${encodeURIComponent(JSON.stringify(from_loc))}&to_location=${encodeURIComponent(JSON.stringify(to_loc))}&people=${people}`);
         const container = document.getElementById('search-results');
@@ -404,7 +396,7 @@ async function searchTaxi() {
         }
         container.innerHTML = results.map(ad => `
             <div class="result-item">
-                <div class="row"><span>🚗 ${ad.driver_name}</span><span>⭐ ${ad.rating || 0}</span></div>
+                <div class="row"><span>🚗 ${ad.car_name}</span><span>⭐ ${ad.rating || 0}</span></div>
                 <div class="row"><span>📍 ${ad.from} → ${ad.to}</span></div>
                 <div class="row"><span>⏰ ${ad.wait_time} daqiqa</span><span>💺 ${ad.seats}</span></div>
                 <div class="row"><span>💰 ${ad.price} so‘m</span><span>📦 ${ad.takes_parcel ? 'Ha' : 'Yo‘q'}</span></div>
@@ -422,83 +414,61 @@ async function searchTaxi() {
 // ---------- BUYURTMA BERISH (TAKSI) ----------
 async function orderTaxi(adId) {
     try {
-        const result = await apiCall('/api/order/create', 'POST', {
+        const ad = await apiCall(`/api/taxi/ad/${adId}`);
+        showOrderResult({
+            driver_name: ad.driver_name,
+            driver_phone: ad.phone,
+            driver_rating: ad.rating,
+            from: ad.from,
+            to: ad.to,
+            wait_time: ad.wait_time,
+            price: ad.price,
+            type: 'taksi'
+        });
+        apiCall('/api/order/create', 'POST', {
             taxi_ad_id: adId,
             passenger_telegram_id: user.id,
             type: 'taxi'
-        });
-        alert('✅ Buyurtma yuborildi! Haydovchi siz bilan bog‘lanadi.');
-        showPage('orders');
-        loadOrders();
+        }).catch(() => {});
     } catch (e) {
         alert('❌ Xatolik: ' + e.message);
     }
 }
 
-// ---------- POCHTA E'LON JOYLASH ----------
-async function submitParcelAd(type) {
-    const from_region = document.getElementById('p_from_region').value;
-    const to_region = document.getElementById('p_to_region').value;
-    if (from_region === to_region && from_region !== 'Hamma') {
-        alert('❌ Qayerdan va qayerga bir xil bo‘lishi mumkin emas!');
+// ---------- POCHTA YUBORISH ----------
+async function submitParcelSend() {
+    const phoneInput = document.getElementById('ps_phone');
+    const phone = phoneInput.value.trim();
+    if (!validatePhone(phone)) {
+        alert('❌ 9 ta raqam kiriting!');
+        phoneInput.focus();
         return;
     }
-    const data = {
-        from_location: {
-            region: from_region,
-            district: document.getElementById('p_from_district').value,
-            neighborhood: document.getElementById('p_from_neighborhood').value
-        },
-        to_location: {
-            region: to_region,
-            district: document.getElementById('p_to_district').value
-        },
-        size: document.getElementById('p_size').value,
-        phone: document.getElementById('p_phone').value
-    };
-    try {
-        await apiCall(`/api/parcel/ad?telegram_id=${user.id}`, 'POST', data);
-        alert('✅ Pochta e’loni joylandi!');
-        showPage('home');
-    } catch (e) {
-        alert('❌ Xatolik: ' + e.message);
-    }
-}
 
-// ---------- POCHTA YUBORISH (taksi topish) ----------
-async function searchParcelCarriers() {
     const from_region = document.getElementById('ps_from_region').value;
     const to_region = document.getElementById('ps_to_region').value;
     if (from_region === to_region && from_region !== 'Hamma') {
         alert('❌ Qayerdan va qayerga bir xil bo‘lishi mumkin emas!');
         return;
     }
-    const from_loc = {
-        region: from_region,
-        district: document.getElementById('ps_from_district').value
+
+    const data = {
+        from_location: {
+            region: from_region,
+            district: document.getElementById('ps_from_district').value
+        },
+        to_location: {
+            region: to_region,
+            district: document.getElementById('ps_to_district').value
+        },
+        size: document.getElementById('ps_size').value,
+        phone: formatPhone(phone)
     };
-    const to_loc = {
-        region: to_region,
-        district: document.getElementById('ps_to_district').value
-    };
+
     try {
-        const results = await apiCall(`/api/taxi/search?from_location=${encodeURIComponent(JSON.stringify(from_loc))}&to_location=${encodeURIComponent(JSON.stringify(to_loc))}&people=1`);
-        const container = document.getElementById('parcel-search-results');
-        const filtered = results.filter(ad => ad.takes_parcel === true);
-        if (filtered.length === 0) {
-            container.innerHTML = '<p>🔔 Pochta oladigan taksi topilmadi.</p>';
-            return;
-        }
-        container.innerHTML = filtered.map(ad => `
-            <div class="result-item">
-                <div class="row"><span>🚗 ${ad.driver_name}</span><span>⭐ ${ad.rating || 0}</span></div>
-                <div class="row"><span>📍 ${ad.from} → ${ad.to}</span></div>
-                <div class="row"><span>📦 Hajmi: ${ad.parcel_size || 'aniqlanmagan'}</span></div>
-                <div class="actions">
-                    <button class="order-btn" onclick="orderParcel(${ad.id})">📦 Pochta yuborish</button>
-                </div>
-            </div>
-        `).join('');
+        await apiCall(`/api/parcel/order?telegram_id=${user.id}`, 'POST', data);
+        alert('✅ Pochta yuborildi!');
+        showPage('home');
     } catch (e) {
         alert('❌ Xatolik: ' + e.message);
     }
@@ -507,31 +477,76 @@ async function searchParcelCarriers() {
 // ---------- POCHTA BUYURTMA ----------
 async function orderParcel(adId) {
     try {
-        const result = await apiCall('/api/order/create', 'POST', {
+        const ad = await apiCall(`/api/taxi/ad/${adId}`);
+        showOrderResult({
+            driver_name: ad.driver_name,
+            driver_phone: ad.phone,
+            driver_rating: ad.rating,
+            from: ad.from,
+            to: ad.to,
+            wait_time: ad.wait_time,
+            price: ad.price,
+            type: 'pochta'
+        });
+        apiCall('/api/order/create', 'POST', {
             taxi_ad_id: adId,
             passenger_telegram_id: user.id,
             type: 'parcel'
-        });
-        alert('✅ Pochta buyurtmasi yuborildi! Haydovchi siz bilan bog‘lanadi.');
-        showPage('orders');
-        loadOrders();
+        }).catch(() => {});
     } catch (e) {
         alert('❌ Xatolik: ' + e.message);
     }
 }
 
-// ---------- E'LONLARNI YUKLASH ----------
+// ---------- BUYURTMA NATIJASI ----------
+function showOrderResult(data) {
+    const container = document.getElementById('order-result-content');
+    container.innerHTML = `
+        <div class="order-success">
+            <h3>✅ Buyurtma yuborildi!</h3>
+            <div class="driver-info">
+                <p>🚗 Haydovchi: ${data.driver_name}</p>
+                <p>⭐ Reyting: ${data.driver_rating || 0}</p>
+                <p>📞 Telefon: ${data.driver_phone}</p>
+                <div class="actions">
+                    <a href="tel:${data.driver_phone}" style="flex:1;">
+                        <button class="call-btn" style="width:100%;">📞 Qo‘ng‘iroq</button>
+                    </a>
+                    <button class="copy-btn" style="flex:1;" onclick="copyPhone('${data.driver_phone}')">📋 Nusxalash</button>
+                </div>
+            </div>
+            <div class="order-details">
+                <p>📍 ${data.from} → ${data.to}</p>
+                <p>⏰ ${data.wait_time} daqiqa</p>
+                <p>💰 ${data.price} so‘m</p>
+                <p>📦 ${data.type === 'pochta' ? 'Pochta yuborish' : 'Taksi buyurtma'}</p>
+            </div>
+        </div>
+    `;
+    showPage('order_result');
+}
+
+// ---------- NUSXALASH ----------
+function copyPhone(phone) {
+    navigator.clipboard.writeText(phone).then(() => {
+        alert('✅ Telefon raqam nusxalandi!');
+    }).catch(() => {
+        const input = document.createElement('input');
+        input.value = phone;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        alert('✅ Telefon raqam nusxalandi!');
+    });
+}
+
+// ---------- E'LONLAR ----------
 async function loadAds() {
     const container = document.getElementById('ads-list');
     const tab = currentTab;
     try {
-        let url = '';
-        if (tab === 'taxi') {
-            url = '/api/taxi/search?from_location={}&to_location={}&people=1';
-        } else {
-            container.innerHTML = '<p>📭 Pochta e’lonlari hali qo‘llab-quvvatlanmaydi.</p>';
-            return;
-        }
+        let url = '/api/taxi/search?from_location={}&to_location={}&people=1';
         const data = await apiCall(url);
         if (data.length === 0) {
             container.innerHTML = '<p>📭 Hozircha e’lonlar yo‘q.</p>';
@@ -539,7 +554,7 @@ async function loadAds() {
         }
         container.innerHTML = data.map(ad => `
             <div class="ad-item">
-                <div><strong>🚖 ${ad.driver_name}</strong> ⭐ ${ad.rating || 0}</div>
+                <div><strong>🚗 ${ad.car_name}</strong> ⭐ ${ad.rating || 0}</div>
                 <div>📍 ${ad.from} → ${ad.to}</div>
                 <div>⏰ ${ad.wait_time} daqiqa | 💺 ${ad.seats} | 💰 ${ad.price} so‘m</div>
                 <div>📦 ${ad.takes_parcel ? 'Pochta oladi' : 'Pochta olmaydi'}</div>
@@ -554,7 +569,7 @@ async function loadAds() {
     }
 }
 
-// E'lonlar tablari
+// ---------- TABLAR ----------
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -564,7 +579,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// ---------- BUYURTMALARNI YUKLASH ----------
+// ---------- BUYURTMALAR ----------
 async function loadOrders() {
     const container = document.getElementById('orders-list');
     try {
@@ -581,15 +596,26 @@ async function loadOrders() {
             <div class="order-item">
                 <div><strong>#${o.id}</strong> ${o.type === 'taxi' ? '🚖 Taksi' : '📦 Pochta'}</div>
                 <div>Holat: ${o.status === 'waiting' ? '🟡 Kutilmoqda' : o.status === 'completed' ? '✅ Yakunlangan' : '❌ Bekor qilingan'}</div>
-                <div>Vaqt: ${new Date(o.created_at).toLocaleString()}</div>
+                <div>📅 ${new Date(o.created_at).toLocaleString()}</div>
+                <div>📍 ${o.from || '—'} → ${o.to || '—'}</div>
+                <div>🚗 Haydovchi: ${o.driver_name || '—'}</div>
+                <div>📞 ${o.driver_phone || '—'}</div>
+                <div class="actions">
+                    ${o.driver_phone ? `
+                        <a href="tel:${o.driver_phone}" style="flex:1;">
+                            <button class="call-btn" style="width:100%;">📞 Qo‘ng‘iroq</button>
+                        </a>
+                        <button class="copy-btn" style="flex:1;" onclick="copyPhone('${o.driver_phone}')">📋 Nusxalash</button>
+                    ` : ''}
+                </div>
             </div>
         `).join('');
     } catch (e) {
-        container.innerHTML = '<p>❌ Buyurtmalarni yuklashda xatolik.</p>';
+        container.innerHTML = '<p>❌ Xatolik.</p>';
     }
 }
 
-// Buyurtma filterlari
+// ---------- FILTERLAR ----------
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -599,36 +625,40 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     });
 });
 
-// ---------- PROFIL (alohida tahrirlash) ----------
+// ---------- PROFIL ----------
 async function loadProfile() {
     const container = document.getElementById('profile-content');
     try {
         const data = await apiCall(`/api/user/${user.id}`);
         container.innerHTML = `
-            <div class="profile-edit-item">
-                <span><strong>👤 Ism:</strong> ${data.first_name}</span>
-                <button onclick="editField('first_name', 'Ism', '${data.first_name}')">✏️</button>
+            <div class="profile-item">
+                <span>👤 Ism: ${data.first_name}</span>
             </div>
-            <div class="profile-edit-item">
-                <span><strong>📞 Telefon:</strong> ${data.phone || '—'}</span>
-                <button onclick="editField('phone', 'Telefon', '${data.phone || ''}')">✏️</button>
+            <div class="profile-item">
+                <span>📞 Telefon: ${data.phone || '—'}</span>
+                <button onclick="editField('phone', '${data.phone || ''}')">✏️</button>
             </div>
-            <div class="profile-edit-item">
-                <span><strong>🚗 Mashina:</strong> ${data.car_name || '—'}</span>
-                <button onclick="editField('car_name', 'Mashina nomi', '${data.car_name || ''}')">✏️</button>
+            <div class="profile-item">
+                <span>🚗 Mashina: ${data.car_name || '—'}</span>
+                <button onclick="editField('car_name', '${data.car_name || ''}')">✏️</button>
             </div>
-            <div class="profile-edit-item">
-                <span><strong>⭐ Reyting:</strong> ${data.rating ? data.rating.toFixed(1) : '0.0'}</span>
-                <span style="font-size:0.9em; opacity:0.6;">(o‘qish uchun)</span>
+            <div class="profile-item">
+                <span>⭐ Reyting: ${data.rating ? data.rating.toFixed(1) : '0.0'}</span>
+                <span style="font-size:0.8em; opacity:0.6;">(avtomatik)</span>
             </div>
-            <div class="profile-edit-item">
-                <span><strong>🌐 Til:</strong> ${data.language || 'uz'}</span>
-                <button onclick="editField('language', 'Til (uz, ru, en)', '${data.language || 'uz'}')">✏️</button>
+            <div class="profile-item">
+                <span>🌐 Til: ${data.language || 'uz'}</span>
+                <button onclick="editLanguage()">✏️</button>
             </div>
-            <div class="profile-edit-item">
-                <span><strong>🎨 Ko‘rinish:</strong> ${data.theme || 'light'}</span>
-                <button onclick="editField('theme', 'Ko‘rinish (light/dark)', '${data.theme || 'light'}')">✏️</button>
+            <div class="profile-item">
+                <span>🎨 Ko‘rinish: ${data.theme || 'light'}</span>
+                <button onclick="editTheme()">✏️</button>
             </div>
+            <div class="profile-actions">
+                <button onclick="loadMyAds('taxi')">📋 Taksi e’lonlarim</button>
+                <button onclick="loadMyAds('parcel')">📦 Pochta e’lonlarim</button>
+            </div>
+            <div id="my-ads-list"></div>
         `;
         if (data.theme) setTheme(data.theme);
     } catch (e) {
@@ -636,81 +666,21 @@ async function loadProfile() {
     }
 }
 
-// Profil maydonini tahrirlash
-function editField(field, label, currentValue) {
-    const newValue = prompt(`${label} ni yangilang:`, currentValue);
+function editField(field, currentValue) {
+    const labels = {
+        phone: '📞 Telefon raqam',
+        car_name: '🚗 Mashina nomi'
+    };
+    const newValue = prompt(`${labels[field]} ni yangilang:`, currentValue);
     if (newValue !== null && newValue !== currentValue) {
         const payload = { telegram_id: user.id };
-        payload[field] = newValue;
-        fetch('/api/user/update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(res => {
-            if (!res.ok) throw new Error('Server xatosi');
-            alert('✅ Yangilandi!');
-            loadProfile();
-        })
-        .catch(err => alert('❌ Xatolik: ' + err.message));
-    }
-}
-
-// ---------- ADMIN PANEL ----------
-async function loadAdminDashboard() {
-    try {
-        const res = await apiCall(`/api/admin/dashboard?telegram_id=${user.id}`);
-        document.getElementById('stat-users').textContent = res.users || 0;
-        document.getElementById('stat-taxi').textContent = res.taxi_ads || 0;
-        document.getElementById('stat-orders').textContent = res.orders || 0;
-    } catch (e) {
-        alert('Admin maʼlumotlarni yuklashda xatolik');
-    }
-}
-
-async function loadAdminUsers() {
-    try {
-        const data = await apiCall(`/api/admin/users?telegram_id=${user.id}`);
-        const container = document.getElementById('admin-data');
-        container.innerHTML = data.map(u => `
-            <div class="user-item">${u.name} | ${u.phone || '—'} | ⭐ ${u.rating}</div>
-        `).join('');
-    } catch (e) {
-        alert('Foydalanuvchilarni yuklashda xatolik');
-    }
-}
-
-async function loadAdminComplaints() {
-    try {
-        const data = await apiCall(`/api/admin/complaints?telegram_id=${user.id}`);
-        const container = document.getElementById('admin-data');
-        container.innerHTML = data.map(c => `
-            <div class="complaint-item">
-                <strong>User ${c.user_id}:</strong> ${c.text}<br>
-                <small>${new Date(c.created).toLocaleString()}</small>
-            </div>
-        `).join('');
-    } catch (e) {
-        alert('Shikoyatlarni yuklashda xatolik');
-    }
-}
-
-async function sendBroadcast() {
-    const text = prompt('📣 Reklama matnini kiriting:');
-    if (!text) return;
-    try {
-        const res = await apiCall('/api/admin/broadcast', 'POST', {
-            telegram_id: user.id,
-            text,
-            media_type: null
-        });
-        alert(`✅ Reklama ${res.sent || 0} ta foydalanuvchiga yuborildi!`);
-    } catch (e) {
-        alert('Reklama yuborishda xatolik: ' + e.message);
-    }
-}
-
-// ---------- ISHGA TUSHIRISH ----------
-showPage('home');
-loadProfile();
-checkAdmin();
+        if (field === 'phone') {
+            if (!validatePhone(newValue)) {
+                alert('❌ 9 ta raqam kiriting!');
+                return;
+            }
+            payload[field] = formatPhone(newValue);
+        } else {
+            payload[field] = newValue;
+        }
+        fetch('/
