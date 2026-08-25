@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- HEADER -->
+        <div id="header">
+            <h1>👑 Admin Panel</h1>
+            <div>
+                <span id="theme-toggle">🌓</span>
+                <a href="/webapp" style="margin-left:12px; font-size:14px; color:#4f46e5;">🔙 Chiqish</a>
+            </div>
+        </div>
+
+        <!-- ADMIN MENU -->
+        <div id="admin-menu">
+            <button class="admin-menu-btn active" data-section="dashboard">📊 Dashboard</button>
+            <button class="admin-menu-btn" data-section="users">👤 Foydalanuvchilar</button>
+            <button class="admin-menu-btn" data-section="taxi_ads">🚖 Taksi e’lonlari</button>
+            <button class="admin-menu-btn" data-section="parcel_ads">📦 Pochta e’lonlari</button>
+            <button class="admin-menu-btn" data-section="orders">📋 Buyurtmalar</button>
+            <button class="admin-menu-btn" data-section="ratings">⭐ Reytinglar</button>
+            <button class="admin-menu-btn" data-section="complaints">📢 Shikoyatlar</button>
+            <button class="admin-menu-btn" data-section="broadcast">📣 Reklama</button>
+            <button class="admin-menu-btn" data-section="channels">🔗 Majburiy obuna</button>
+            <button class="admin-menu-btn" data-section="settings">⚙️ Sozlamalar</button>
+        </div>
+
+        <!-- ADMIN CONTENT -->
+        <div id="admin-content">
+            <!-- Dashboard -->
+            <div id="section-dashboard" class="admin-section active">
+                <h2>📊 Dashboard</h2>
+                <div class="stats-grid">
+                    <div class="stat-card"><span class="stat-icon">👤</span><span class="stat-number" id="stat-users">0</span><span class="stat-label">Foydalanuvchilar</span></div>
+                    <div class="stat-card"><span class="stat-icon">🚖</span><span class="stat-number" id="stat-taxi">0</span><span class="stat-label">Taksi e’lonlari</span></div>
+                    <div class="stat-card"><span class="stat-icon">📦</span><span class="stat-number" id="stat-parcel">0</span><span class="stat-label">Pochta e’lonlari</span></div>
+                    <div class="stat-card"><span class="stat-icon">📋</span><span class="stat-number" id="stat-orders">0</span><span class="stat-label">Buyurtmalar</span></div>
+                    <div class="stat-card"><span class="stat-icon">⭐</span><span class="stat-number" id="stat-rating">0</span><span class="stat-label">O‘rtacha reyting</span></div>
+                    <div class="stat-card"><span class="stat-icon">📢</span><span class="stat-number" id="stat-complaints">0</span><span class="stat-label">Shikoyatlar</span></div>
+                </div>
+            </div>
+
+            <!-- Users -->
+            <div id="section-users" class="admin-section">
+                <h2>👤 Foydalanuvchilar</h2>
+                <div id="users-list"></div>
+            </div>
+
+            <!-- Taxi Ads -->
+            <div id="section-taxi_ads" class="admin-section">
+                <h2>🚖 Taksi e’lonlari</h2>
+                <div id="taxi-ads-list"></div>
+            </div>
+
+            <!-- Parcel Ads -->
+            <div id="section-parcel_ads" class="admin-section">
+                <h2>📦 Pochta e’lonlari</h2>
+                <div id="parcel-ads-list"></div>
+            </div>
+
+            <!-- Orders -->
+            <div id="section-orders" class="admin-section">
+                <h2>📋 Buyurtmalar</h2>
+                <div id="admin-orders-list"></div>
+            </div>
+
+            <!-- Ratings -->
+            <div id="section-ratings" class="admin-section">
+                <h2>⭐ Reytinglar</h2>
+                <div id="ratings-list"></div>
+            </div>
+
+            <!-- Complaints -->
+            <div id="section-complaints" class="admin-section">
+                <h2>📢 Shikoyatlar</h2>
+                <div id="complaints-list"></div>
+            </div>
+
+            <!-- Broadcast -->
+            <div id="section-broadcast" class="admin-section">
+                <h2>📣 Reklama yuborish</h2>
+                <div class="form-group">
+                    <label>📝 Matn</label>
+                    <textarea id="broadcast-text" rows="4" placeholder="Reklama matnini kiriting..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>🎯 Kimga yuboramiz?</label>
+                    <select id="broadcast-target">
+                        <option value="all">Barcha foydalanuvchilar</option>
+                        <option value="drivers">Haydovchilar</option>
+                        <option value="passengers">Yo‘lovchilar</option>
+                    </select>
+                </div>
+                <button onclick="sendBroadcast()" class="primary-btn">📤 Yuborish</button>
+                <div id="broadcast-result" style="margin-top:12px;"></div>
+            </div>
+
+            <!-- Channels -->
+            <div id="section-channels" class="admin-section">
+                <h2>🔗 Majburiy obuna</h2>
+                <div class="form-group" style="display:flex; gap:8px;">
+                    <input type="text" id="channel-input" placeholder="@kanal_username" style="flex:1;">
+                    <button onclick="addChannel()" class="primary-btn">➕ Qo‘shish</button>
+                </div>
+                <div id="channels-list"></div>
+            </div>
+
+            <!-- Settings -->
+            <div id="section-settings" class="admin-section">
+                <h2>⚙️ Sozlamalar</h2>
+                <div class="form-group">
+                    <label>⏰ E’lon muddati (soat)</label>
+                    <input type="number" id="setting-expire-hours" value="24">
+                </div>
+                <div class="form-group">
+                    <label>⏰ Reyting so‘rov vaqti (soat)</label>
+                    <input type="number" id="setting-rating-hours" value="5">
+                </div>
+                <button onclick="saveSettings()" class="primary-btn">✅ Saqlash</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/admin.js"></script>
+</body>
+</html>
