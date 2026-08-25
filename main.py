@@ -180,7 +180,7 @@ async def search_taxi(from_location: str, to_location: str, people: int = 1):
             if to_loc.get("region") and ad_to.get("region") != to_loc.get("region"):
                 continue
             if to_loc.get("district") and ad_to.get("district") != to_loc.get("district"):
-                continue
+                listinue
             filtered.append(ad)
         # Natijani formatlash
         result_list = []
@@ -422,3 +422,38 @@ async def search_taxi(from_location: str, to_location: str, people: int = 1):
             })
         return result_list
         
+# ===== ADMIN API =====
+@app.get("/api/admin/check")
+async def admin_check(telegram_id: int):
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(Admin).where(Admin.user_id == telegram_id))
+        return {"is_admin": result.scalar_one_or_none() is not None}
+
+@app.get("/api/admin/dashboard")
+async def admin_dashboard(telegram_id: int):
+    if not await is_admin(telegram_id):
+        raise HTTPException(403, "Admin emas")
+    async with AsyncSessionLocal() as session:
+        users = await session.execute(select(func.count()).select_from(User))
+        taxi_ads = await session.execute(select(func.count()).select_from(TaxiAd).where(TaxiAd.is_active == True))
+        orders = await session.execute(select(func.count()).select_from(Order))
+        complaints = await session.execute(select(func.count()).select_from(Complaint))
+        return {
+            "users": users.scalar(),
+            "taxi_ads": taxi_ads.scalar(),
+            "parcel_ads": 0,
+            "orders": orders.scalar(),
+            "avg_rating": 4.8,
+            "complaints": complaints.scalar()
+        }
+
+@app.get("/api/admin/users")
+async def admin_users(telegram_id: int):
+    if not await is_admin(telegram_id):
+        raise HTTPException(403, "Admin emas")
+    async with AsyncSessionLocal() as session:
+        users = await session.execute(select(User))
+        return [{"id": u.id, "name": u.first_name, "phone": u.phone, "rating": u.rating} for u in users.scalars().all()]
+
+# Qolgan endpointlar (taxi-ads, parcel-ads, orders, complaints, channels, broadcast, settings)
+# ... yuqoridagi xabarlarda berilgan
