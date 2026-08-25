@@ -10,50 +10,6 @@ let currentTab = 'taxi';
 let currentFilter = 'all';
 let isAdmin = false;
 
-// ---------- O'ZBEKISTON VILOYATLARI, TUMANLARI, MAHALLALARI ----------
-// (siz to‘liq ro‘yxat bilan almashtirishingiz mumkin)
-const regions = {
-    "Toshkent": {
-        districts: {
-            "Hamma": ["Hamma"],
-            "Yunusobod": ["Hamma", "Yunusobod-1", "Yunusobod-2", "Yunusobod-3"],
-            "Mirzo Ulug'bek": ["Hamma", "Mirzo-1", "Mirzo-2"],
-            "Olmazor": ["Hamma", "Olmazor-1", "Olmazor-2"],
-        }
-    },
-    "Samarqand": {
-        districts: {
-            "Hamma": ["Hamma"],
-            "Markaziy": ["Hamma", "Markaz-1", "Markaz-2"],
-            "Sog'd": ["Hamma", "Sog'd-1", "Sog'd-2"],
-        }
-    },
-    "Farg'ona": {
-        districts: {
-            "Hamma": ["Hamma"],
-            "Qo'qon": ["Hamma", "Qo'qon-1", "Qo'qon-2"],
-            "Rishton": ["Hamma", "Rishton-1", "Rishton-2"],
-        }
-    },
-    "Andijon": {
-        districts: {
-            "Hamma": ["Hamma"],
-            "Andijon sh": ["Hamma", "Andijon-1", "Andijon-2"],
-            "Xo'jaobod": ["Hamma", "Xo'jaobod-1"],
-        }
-    },
-    "Buxoro": {
-        districts: {
-            "Hamma": ["Hamma"],
-            "Buxoro sh": ["Hamma", "Buxoro-1", "Buxoro-2"],
-            "G'ijduvon": ["Hamma", "G'ijduvon-1"],
-        }
-    }
-};
-
-// Viloyatlar ro'yxati (1-o'rinda "Hamma")
-const regionNames = ["Hamma", ...Object.keys(regions)];
-
 // ---------- THEME ----------
 function setTheme(theme) {
     document.body.className = theme === 'dark' ? 'dark' : '';
@@ -126,11 +82,62 @@ document.querySelectorAll('.card').forEach(card => {
     });
 });
 
+// ---------- DROPDOWN YORDAMCHI FUNKSIYALARI ----------
+// Bu funksiyalar regions obyekti yuklangan deb hisoblaydi (regions.js)
+function updateDistricts(prefix) {
+    const regionSelect = document.getElementById(`${prefix}_region`);
+    const districtSelect = document.getElementById(`${prefix}_district`);
+    if (!regionSelect || !districtSelect) return;
+    const region = regionSelect.value;
+    if (region === 'Hamma') {
+        districtSelect.innerHTML = `<option value="Hamma">Hamma</option>`;
+        updateMahallas(prefix);
+        return;
+    }
+    const districtData = regions[region]?.districts || {};
+    const districtNames = Object.keys(districtData);
+    // "Hamma" ni birinchi qo'shamiz
+    let options = '<option value="Hamma">Hamma</option>';
+    districtNames.forEach(d => {
+        options += `<option value="${d}">${d}</option>`;
+    });
+    districtSelect.innerHTML = options;
+    updateMahallas(prefix);
+}
+
+function updateMahallas(prefix) {
+    const regionSelect = document.getElementById(`${prefix}_region`);
+    const districtSelect = document.getElementById(`${prefix}_district`);
+    const mahallaSelect = document.getElementById(`${prefix}_neighborhood`);
+    if (!regionSelect || !districtSelect || !mahallaSelect) return;
+    const region = regionSelect.value;
+    const district = districtSelect.value;
+    if (region === 'Hamma' || district === 'Hamma') {
+        mahallaSelect.innerHTML = `<option value="Hamma">Hamma</option>`;
+        return;
+    }
+    const mahallas = regions[region]?.districts?.[district] || ["Hamma"];
+    let options = '<option value="Hamma">Hamma</option>';
+    mahallas.forEach(m => {
+        if (m !== 'Hamma') options += `<option value="${m}">${m}</option>`;
+    });
+    mahallaSelect.innerHTML = options;
+}
+
+// Pochta olasizmi toggle
+function toggleParcelSize() {
+    const val = document.getElementById('takes_parcel').value;
+    document.getElementById('parcel_size_group').style.display = val === 'true' ? 'block' : 'none';
+}
+
 // ---------- FORMA ----------
 function showForm(type) {
     const formBody = document.getElementById('form-body');
     const formTitle = document.getElementById('form-title');
     let html = '';
+
+    // Viloyatlar ro'yxatini yaratish
+    const regionOptions = regionNames.map(r => `<option value="${r}">${r}</option>`).join('');
 
     if (type === 'taxi') {
         formTitle.textContent = '🚖 Taksi e’lonini joylash';
@@ -145,33 +152,23 @@ function showForm(type) {
             </div>
             <div class="form-group">
                 <label>📍 Qayerdan (Viloyat)</label>
-                <select id="from_region" onchange="updateDistricts('from')">
-                    ${regionNames.map(r => `<option value="${r}">${r}</option>`).join('')}
-                </select>
+                <select id="from_region" onchange="updateDistricts('from')">${regionOptions}</select>
             </div>
             <div class="form-group">
                 <label>📍 Tuman</label>
-                <select id="from_district" onchange="updateMahallas('from')">
-                    <option value="Hamma">Hamma</option>
-                </select>
+                <select id="from_district" onchange="updateMahallas('from')"><option value="Hamma">Hamma</option></select>
             </div>
             <div class="form-group">
                 <label>📍 Mahalla</label>
-                <select id="from_neighborhood">
-                    <option value="Hamma">Hamma</option>
-                </select>
+                <select id="from_neighborhood"><option value="Hamma">Hamma</option></select>
             </div>
             <div class="form-group">
                 <label>📍 Qayerga (Viloyat)</label>
-                <select id="to_region" onchange="updateDistricts('to')">
-                    ${regionNames.map(r => `<option value="${r}">${r}</option>`).join('')}
-                </select>
+                <select id="to_region" onchange="updateDistricts('to')">${regionOptions}</select>
             </div>
             <div class="form-group">
                 <label>📍 Tuman</label>
-                <select id="to_district">
-                    <option value="Hamma">Hamma</option>
-                </select>
+                <select id="to_district" onchange="updateMahallas('to')"><option value="Hamma">Hamma</option></select>
             </div>
             <div class="form-group">
                 <label>💰 Narx (so‘m)</label>
@@ -205,7 +202,6 @@ function showForm(type) {
             </div>
             <button type="submit" onclick="submitTaxiAd()">✅ E’lonni joylash</button>
         `;
-        // Boshlang‘ich tuman va mahallani to‘ldirish
         setTimeout(() => {
             updateDistricts('from');
             updateDistricts('to');
@@ -220,27 +216,19 @@ function showForm(type) {
             </div>
             <div class="form-group">
                 <label>📍 Qayerdan (Viloyat)</label>
-                <select id="search_from_region" onchange="updateDistricts('search_from')">
-                    ${regionNames.map(r => `<option value="${r}">${r}</option>`).join('')}
-                </select>
+                <select id="search_from_region" onchange="updateDistricts('search_from')">${regionOptions}</select>
             </div>
             <div class="form-group">
                 <label>📍 Tuman</label>
-                <select id="search_from_district">
-                    <option value="Hamma">Hamma</option>
-                </select>
+                <select id="search_from_district" onchange="updateMahallas('search_from')"><option value="Hamma">Hamma</option></select>
             </div>
             <div class="form-group">
                 <label>📍 Qayerga (Viloyat)</label>
-                <select id="search_to_region" onchange="updateDistricts('search_to')">
-                    ${regionNames.map(r => `<option value="${r}">${r}</option>`).join('')}
-                </select>
+                <select id="search_to_region" onchange="updateDistricts('search_to')">${regionOptions}</select>
             </div>
             <div class="form-group">
                 <label>📍 Tuman</label>
-                <select id="search_to_district">
-                    <option value="Hamma">Hamma</option>
-                </select>
+                <select id="search_to_district" onchange="updateMahallas('search_to')"><option value="Hamma">Hamma</option></select>
             </div>
             <button type="submit" onclick="searchTaxi()">🔍 Taksi qidirish</button>
             <div id="search-results" style="margin-top:16px;"></div>
@@ -255,33 +243,23 @@ function showForm(type) {
         html = `
             <div class="form-group">
                 <label>📍 Qayerdan (Viloyat)</label>
-                <select id="p_from_region" onchange="updateDistricts('p_from')">
-                    ${regionNames.map(r => `<option value="${r}">${r}</option>`).join('')}
-                </select>
+                <select id="p_from_region" onchange="updateDistricts('p_from')">${regionOptions}</select>
             </div>
             <div class="form-group">
                 <label>📍 Tuman</label>
-                <select id="p_from_district">
-                    <option value="Hamma">Hamma</option>
-                </select>
+                <select id="p_from_district" onchange="updateMahallas('p_from')"><option value="Hamma">Hamma</option></select>
             </div>
             <div class="form-group">
                 <label>📍 Mahalla</label>
-                <select id="p_from_neighborhood">
-                    <option value="Hamma">Hamma</option>
-                </select>
+                <select id="p_from_neighborhood"><option value="Hamma">Hamma</option></select>
             </div>
             <div class="form-group">
                 <label>📍 Qayerga (Viloyat)</label>
-                <select id="p_to_region" onchange="updateDistricts('p_to')">
-                    ${regionNames.map(r => `<option value="${r}">${r}</option>`).join('')}
-                </select>
+                <select id="p_to_region" onchange="updateDistricts('p_to')">${regionOptions}</select>
             </div>
             <div class="form-group">
                 <label>📍 Tuman</label>
-                <select id="p_to_district">
-                    <option value="Hamma">Hamma</option>
-                </select>
+                <select id="p_to_district" onchange="updateMahallas('p_to')"><option value="Hamma">Hamma</option></select>
             </div>
             <div class="form-group">
                 <label>📦 Hajmi</label>
@@ -307,27 +285,19 @@ function showForm(type) {
         html = `
             <div class="form-group">
                 <label>📍 Qayerdan (Viloyat)</label>
-                <select id="ps_from_region" onchange="updateDistricts('ps_from')">
-                    ${regionNames.map(r => `<option value="${r}">${r}</option>`).join('')}
-                </select>
+                <select id="ps_from_region" onchange="updateDistricts('ps_from')">${regionOptions}</select>
             </div>
             <div class="form-group">
                 <label>📍 Tuman</label>
-                <select id="ps_from_district">
-                    <option value="Hamma">Hamma</option>
-                </select>
+                <select id="ps_from_district" onchange="updateMahallas('ps_from')"><option value="Hamma">Hamma</option></select>
             </div>
             <div class="form-group">
                 <label>📍 Qayerga (Viloyat)</label>
-                <select id="ps_to_region" onchange="updateDistricts('ps_to')">
-                    ${regionNames.map(r => `<option value="${r}">${r}</option>`).join('')}
-                </select>
+                <select id="ps_to_region" onchange="updateDistricts('ps_to')">${regionOptions}</select>
             </div>
             <div class="form-group">
                 <label>📍 Tuman</label>
-                <select id="ps_to_district">
-                    <option value="Hamma">Hamma</option>
-                </select>
+                <select id="ps_to_district" onchange="updateMahallas('ps_to')"><option value="Hamma">Hamma</option></select>
             </div>
             <div class="form-group">
                 <label>📦 Hajmi</label>
@@ -354,35 +324,6 @@ function showForm(type) {
     showPage('form');
 }
 
-// ---------- DROPDOWN YORDAMCHI FUNKSIYALARI ----------
-function updateDistricts(prefix) {
-    const regionSelect = document.getElementById(`${prefix}_region`);
-    const districtSelect = document.getElementById(`${prefix}_district`);
-    if (!regionSelect || !districtSelect) return;
-    const region = regionSelect.value;
-    const districtData = regions[region]?.districts || { "Hamma": ["Hamma"] };
-    const districtNames = Object.keys(districtData);
-    districtSelect.innerHTML = districtNames.map(d => `<option value="${d}">${d}</option>`).join('');
-    updateMahallas(prefix);
-}
-
-function updateMahallas(prefix) {
-    const regionSelect = document.getElementById(`${prefix}_region`);
-    const districtSelect = document.getElementById(`${prefix}_district`);
-    const mahallaSelect = document.getElementById(`${prefix}_neighborhood`);
-    if (!regionSelect || !districtSelect || !mahallaSelect) return;
-    const region = regionSelect.value;
-    const district = districtSelect.value;
-    const mahallas = regions[region]?.districts?.[district] || ["Hamma"];
-    mahallaSelect.innerHTML = mahallas.map(m => `<option value="${m}">${m}</option>`).join('');
-}
-
-// Pochta olasizmi toggle
-function toggleParcelSize() {
-    const val = document.getElementById('takes_parcel').value;
-    document.getElementById('parcel_size_group').style.display = val === 'true' ? 'block' : 'none';
-}
-
 // ---------- ORQAGA ----------
 document.getElementById('form-back').addEventListener('click', () => showPage('home'));
 document.getElementById('admin-back')?.addEventListener('click', () => showPage('home'));
@@ -404,16 +345,22 @@ async function apiCall(url, method = 'GET', body = null) {
 
 // ---------- TAKSI E'LON JOYLASH ----------
 async function submitTaxiAd() {
+    const from_region = document.getElementById('from_region').value;
+    const to_region = document.getElementById('to_region').value;
+    if (from_region === to_region && from_region !== 'Hamma') {
+        alert('❌ Qayerdan va qayerga bir xil bo‘lishi mumkin emas!');
+        return;
+    }
     const data = {
         wait_time: parseInt(document.getElementById('wait_time').value),
         seats: parseInt(document.getElementById('seats').value),
         from_location: {
-            region: document.getElementById('from_region').value,
+            region: from_region,
             district: document.getElementById('from_district').value,
             neighborhood: document.getElementById('from_neighborhood').value
         },
         to_location: {
-            region: document.getElementById('to_region').value,
+            region: to_region,
             district: document.getElementById('to_district').value
         },
         price: parseFloat(document.getElementById('price').value),
@@ -433,12 +380,18 @@ async function submitTaxiAd() {
 
 // ---------- YO'LOVCHI QIDIRISH ----------
 async function searchTaxi() {
+    const from_region = document.getElementById('search_from_region').value;
+    const to_region = document.getElementById('search_to_region').value;
+    if (from_region === to_region && from_region !== 'Hamma') {
+        alert('❌ Qayerdan va qayerga bir xil bo‘lishi mumkin emas!');
+        return;
+    }
     const from_loc = {
-        region: document.getElementById('search_from_region').value,
+        region: from_region,
         district: document.getElementById('search_from_district').value
     };
     const to_loc = {
-        region: document.getElementById('search_to_region').value,
+        region: to_region,
         district: document.getElementById('search_to_district').value
     };
     const people = parseInt(document.getElementById('people').value);
@@ -484,14 +437,20 @@ async function orderTaxi(adId) {
 
 // ---------- POCHTA E'LON JOYLASH ----------
 async function submitParcelAd(type) {
+    const from_region = document.getElementById('p_from_region').value;
+    const to_region = document.getElementById('p_to_region').value;
+    if (from_region === to_region && from_region !== 'Hamma') {
+        alert('❌ Qayerdan va qayerga bir xil bo‘lishi mumkin emas!');
+        return;
+    }
     const data = {
         from_location: {
-            region: document.getElementById('p_from_region').value,
+            region: from_region,
             district: document.getElementById('p_from_district').value,
             neighborhood: document.getElementById('p_from_neighborhood').value
         },
         to_location: {
-            region: document.getElementById('p_to_region').value,
+            region: to_region,
             district: document.getElementById('p_to_district').value
         },
         size: document.getElementById('p_size').value,
@@ -508,12 +467,18 @@ async function submitParcelAd(type) {
 
 // ---------- POCHTA YUBORISH (taksi topish) ----------
 async function searchParcelCarriers() {
+    const from_region = document.getElementById('ps_from_region').value;
+    const to_region = document.getElementById('ps_to_region').value;
+    if (from_region === to_region && from_region !== 'Hamma') {
+        alert('❌ Qayerdan va qayerga bir xil bo‘lishi mumkin emas!');
+        return;
+    }
     const from_loc = {
-        region: document.getElementById('ps_from_region').value,
+        region: from_region,
         district: document.getElementById('ps_from_district').value
     };
     const to_loc = {
-        region: document.getElementById('ps_to_region').value,
+        region: to_region,
         district: document.getElementById('ps_to_district').value
     };
     try {
@@ -578,7 +543,10 @@ async function loadAds() {
                 <div>📍 ${ad.from} → ${ad.to}</div>
                 <div>⏰ ${ad.wait_time} daqiqa | 💺 ${ad.seats} | 💰 ${ad.price} so‘m</div>
                 <div>📦 ${ad.takes_parcel ? 'Pochta oladi' : 'Pochta olmaydi'}</div>
-                <button onclick="orderTaxi(${ad.id})">🚕 Buyurtma berish</button>
+                <div class="actions">
+                    <button class="order-btn" onclick="orderTaxi(${ad.id})">🚕 Buyurtma berish</button>
+                    ${ad.takes_parcel ? `<button class="parcel-btn" onclick="orderParcel(${ad.id})">📦 Pochta yuborish</button>` : ''}
+                </div>
             </div>
         `).join('');
     } catch (e) {
@@ -631,19 +599,36 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     });
 });
 
-// ---------- PROFIL ----------
+// ---------- PROFIL (alohida tahrirlash) ----------
 async function loadProfile() {
     const container = document.getElementById('profile-content');
     try {
         const data = await apiCall(`/api/user/${user.id}`);
         container.innerHTML = `
-            <p><strong>👤 Ism:</strong> ${data.first_name}</p>
-            <p><strong>📞 Telefon:</strong> ${data.phone || '—'}</p>
-            <p><strong>🚗 Mashina:</strong> ${data.car_name || '—'}</p>
-            <p><strong>⭐ Reyting:</strong> ${data.rating ? data.rating.toFixed(1) : '0.0'}</p>
-            <p><strong>🌐 Til:</strong> ${data.language || 'uz'}</p>
-            <p><strong>🎨 Ko‘rinish:</strong> ${data.theme || 'light'}</p>
-            <button onclick="editProfile()">✏️ Tahrirlash</button>
+            <div class="profile-edit-item">
+                <span><strong>👤 Ism:</strong> ${data.first_name}</span>
+                <button onclick="editField('first_name', 'Ism', '${data.first_name}')">✏️</button>
+            </div>
+            <div class="profile-edit-item">
+                <span><strong>📞 Telefon:</strong> ${data.phone || '—'}</span>
+                <button onclick="editField('phone', 'Telefon', '${data.phone || ''}')">✏️</button>
+            </div>
+            <div class="profile-edit-item">
+                <span><strong>🚗 Mashina:</strong> ${data.car_name || '—'}</span>
+                <button onclick="editField('car_name', 'Mashina nomi', '${data.car_name || ''}')">✏️</button>
+            </div>
+            <div class="profile-edit-item">
+                <span><strong>⭐ Reyting:</strong> ${data.rating ? data.rating.toFixed(1) : '0.0'}</span>
+                <span style="font-size:0.9em; opacity:0.6;">(o‘qish uchun)</span>
+            </div>
+            <div class="profile-edit-item">
+                <span><strong>🌐 Til:</strong> ${data.language || 'uz'}</span>
+                <button onclick="editField('language', 'Til (uz, ru, en)', '${data.language || 'uz'}')">✏️</button>
+            </div>
+            <div class="profile-edit-item">
+                <span><strong>🎨 Ko‘rinish:</strong> ${data.theme || 'light'}</span>
+                <button onclick="editField('theme', 'Ko‘rinish (light/dark)', '${data.theme || 'light'}')">✏️</button>
+            </div>
         `;
         if (data.theme) setTheme(data.theme);
     } catch (e) {
@@ -651,33 +636,23 @@ async function loadProfile() {
     }
 }
 
-function editProfile() {
-    const phone = prompt('📞 Telefon raqamingizni kiriting:');
-    if (phone !== null) {
+// Profil maydonini tahrirlash
+function editField(field, label, currentValue) {
+    const newValue = prompt(`${label} ni yangilang:`, currentValue);
+    if (newValue !== null && newValue !== currentValue) {
+        const payload = { telegram_id: user.id };
+        payload[field] = newValue;
         fetch('/api/user/update', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegram_id: user.id, phone })
-        }).then(() => { alert('✅ Telefon saqlandi!'); loadProfile(); })
-          .catch(() => alert('❌ Xatolik'));
-    }
-    const car = prompt('🚗 Mashina nomini kiriting:');
-    if (car !== null) {
-        fetch('/api/user/update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegram_id: user.id, car_name: car })
-        }).then(() => { alert('✅ Mashina saqlandi!'); loadProfile(); })
-          .catch(() => alert('❌ Xatolik'));
-    }
-    const lang = prompt('🌐 Tilni tanlang (uz, ru, en):', 'uz');
-    if (lang !== null) {
-        fetch('/api/user/update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegram_id: user.id, language: lang })
-        }).then(() => { alert('✅ Til saqlandi!'); loadProfile(); })
-          .catch(() => alert('❌ Xatolik'));
+            body: JSON.stringify(payload)
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Server xatosi');
+            alert('✅ Yangilandi!');
+            loadProfile();
+        })
+        .catch(err => alert('❌ Xatolik: ' + err.message));
     }
 }
 
