@@ -378,3 +378,47 @@ async def admin_broadcast(data: dict, telegram_id: int):
             except:
                 pass
         return {"sent": sent}
+
+@app.get("/api/taxi/search")
+async def search_taxi(from_location: str, to_location: str, people: int = 1):
+    async with AsyncSessionLocal() as session:
+        query = select(TaxiAd).where(
+            TaxiAd.is_active == True,
+            TaxiAd.seats >= people
+        )
+        result = await session.execute(query)
+        ads = result.scalars().all()
+        from_loc = json.loads(from_location) if from_location else {}
+        to_loc = json.loads(to_location) if to_location else {}
+        filtered = []
+        for ad in ads:
+            ad_from = json.loads(ad.from_location)
+            ad_to = json.loads(ad.to_location)
+            if from_loc.get("region") and ad_from.get("region") != from_loc.get("region"):
+                continue
+            if from_loc.get("district") and ad_from.get("district") != from_loc.get("district"):
+                continue
+            if to_loc.get("region") and ad_to.get("region") != to_loc.get("region"):
+                continue
+            if to_loc.get("district") and ad_to.get("district") != to_loc.get("district"):
+                continue
+            filtered.append(ad)
+        result_list = []
+        for ad in filtered:
+            driver = await session.get(User, ad.user_id)
+            result_list.append({
+                "id": ad.id,
+                "driver_name": driver.first_name if driver else "Noma'lum",
+                "car_name": driver.car_name if driver else "Noma'lum",  # ✅ QO‘SHILDI
+                "rating": driver.rating if driver else 0,
+                "from": ad.from_location,
+                "to": ad.to_location,
+                "wait_time": ad.wait_time,
+                "seats": ad.seats,
+                "takes_parcel": ad.takes_parcel,
+                "price": ad.price,
+                "negotiable": ad.negotiable,
+                "phone": ad.phone
+            })
+        return result_list
+        
