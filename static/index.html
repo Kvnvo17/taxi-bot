@@ -2,19 +2,22 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Taksi Raqami</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <div id="app">
+        <!-- HEADER -->
         <div id="header">
             <h1>🚖 Taksi Raqami</h1>
-            <div id="theme-toggle">🌓</div>
+            <span id="theme-toggle">🌓</span>
         </div>
+
+        <!-- MAIN CONTENT -->
         <div id="main">
-            <!-- Bosh sahifa -->
+            <!-- ========== BOSH SAHIFA ========== -->
             <div id="page-home" class="page active">
                 <div class="card-grid">
                     <div class="card" data-action="driver">
@@ -35,22 +38,44 @@
                     </div>
                 </div>
             </div>
-            <!-- E’lonlar sahifasi -->
+
+            <!-- ========== E'LONLAR ========== -->
             <div id="page-ads" class="page">
                 <h2>📋 E’lonlar</h2>
+                <div style="display:flex; gap:8px; margin-bottom:12px;">
+                    <button class="tab-btn active" data-tab="taxi">🚖 Taksi</button>
+                    <button class="tab-btn" data-tab="parcel">📦 Pochta</button>
+                </div>
                 <div id="ads-list"></div>
             </div>
-            <!-- Buyurtmalar sahifasi -->
+
+            <!-- ========== BUYURTMALAR ========== -->
             <div id="page-orders" class="page">
                 <h2>📦 Buyurtmalar</h2>
+                <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                    <button class="filter-btn active" data-status="all">📋 Barchasi</button>
+                    <button class="filter-btn" data-status="waiting">🟡 Kutilmoqda</button>
+                    <button class="filter-btn" data-status="completed">✅ Yakunlangan</button>
+                    <button class="filter-btn" data-status="cancelled">❌ Bekor qilingan</button>
+                </div>
                 <div id="orders-list"></div>
             </div>
-            <!-- Profil sahifasi -->
+
+            <!-- ========== PROFIL ========== -->
             <div id="page-profile" class="page">
                 <h2>👤 Profil</h2>
                 <div id="profile-content"></div>
             </div>
+
+            <!-- ========== FORMA (qo'shimcha) ========== -->
+            <div id="page-form" class="page">
+                <h2 id="form-title">Forma</h2>
+                <div id="form-body"></div>
+                <button id="form-back" class="back-btn">🔙 Orqaga</button>
+            </div>
         </div>
+
+        <!-- BOTTOM NAV -->
         <div id="bottom-nav">
             <button class="nav-btn active" data-page="home">🏠 Bosh</button>
             <button class="nav-btn" data-page="ads">📋 E’lonlar</button>
@@ -58,6 +83,7 @@
             <button class="nav-btn" data-page="profile">👤 Profil</button>
         </div>
     </div>
+
     <script src="/static/script.js"></script>
 </body>
 </html>
