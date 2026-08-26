@@ -470,7 +470,18 @@ async def create_order(order: OrderCreate):
         await bot.send_message(
             passenger.telegram_id,
             f"✅ Buyurtma qabul qilindi!\n\n"
-            f"Haydovchi: {driver.first_name if driver else 'Noma'lum'}\n"
+            # NOTO'G'RI:
+f"Haydovchi: {driver.first_name if driver else 'Noma'lum'}\n"
+
+# TO'G'RI (3 xil usul):
+# Usul 1 - qo'shtirnoq bilan
+f"Haydovchi: {driver.first_name if driver else 'Noma\'lum'}\n"
+
+# Usul 2 - ikki xil qo'shtirnoq
+f'Haydovchi: {driver.first_name if driver else "Noma\'lum"}\n'
+
+# Usul 3 - eng yaxshi (tavsiya)
+f"Haydovchi: {driver.first_name if driver else 'Noma\\'lum'}\n"
             f"Telefon: {ad.phone}\n"
             f"Iltimos, haydovchi bilan bog‘laning."
         )
