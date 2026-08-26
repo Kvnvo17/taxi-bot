@@ -1,8 +1,11 @@
-// ===== ADMIN PANEL =====
+// ============================================================
+// Admin Panel JavaScript
+// ============================================================
+
 const tg = window.Telegram.WebApp;
 const user = tg.initDataUnsafe?.user || { id: 123456 };
 
-// ----- API -----
+// ---------- API ----------
 async function apiCall(url, method = 'GET', body = null) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body) opts.body = JSON.stringify(body);
@@ -14,13 +17,14 @@ async function apiCall(url, method = 'GET', body = null) {
     return res.json();
 }
 
-// ----- MENU -----
+// ---------- MENU ----------
 document.querySelectorAll('.admin-menu-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.admin-menu-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         document.querySelectorAll('.admin-section').forEach(el => el.classList.remove('active'));
-        document.getElementById(`section-${this.dataset.section}`).classList.add('active');
+        const section = document.getElementById(`section-${this.dataset.section}`);
+        if (section) section.classList.add('active');
         if (this.dataset.section === 'dashboard') loadDashboard();
         if (this.dataset.section === 'users') loadUsers();
         if (this.dataset.section === 'taxi_ads') loadTaxiAds();
@@ -32,12 +36,12 @@ document.querySelectorAll('.admin-menu-btn').forEach(btn => {
     });
 });
 
-// ----- THEME -----
+// ---------- THEME ----------
 document.getElementById('theme-toggle').addEventListener('click', function() {
     document.body.classList.toggle('dark');
 });
 
-// ----- DASHBOARD -----
+// ---------- DASHBOARD ----------
 async function loadDashboard() {
     try {
         const data = await apiCall(`/api/admin/dashboard?telegram_id=${user.id}`);
@@ -50,49 +54,49 @@ async function loadDashboard() {
     } catch (e) { console.error(e); }
 }
 
-// ----- USERS -----
+// ---------- USERS ----------
 async function loadUsers() {
     try {
         const data = await apiCall(`/api/admin/users?telegram_id=${user.id}`);
         document.getElementById('users-list').innerHTML = data.map(u => `
-            <div style="padding:10px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;">
-                <span>${u.name}</span>
-                <span>${u.phone || '—'}</span>
+            <div style="padding:10px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
+                <span><strong>${u.name}</strong> ${u.phone || '—'}</span>
                 <span>⭐ ${u.rating || 0}</span>
+                <span>${u.is_active ? '🟢 Faol' : '🔴 Blok'}</span>
             </div>
         `).join('') || '<p>📭 Foydalanuvchilar yo‘q.</p>';
     } catch (e) { document.getElementById('users-list').innerHTML = '<p>❌ Xatolik</p>'; }
 }
 
-// ----- TAXI ADS -----
+// ---------- TAXI ADS ----------
 async function loadTaxiAds() {
     try {
         const data = await apiCall(`/api/admin/taxi-ads?telegram_id=${user.id}`);
         document.getElementById('taxi-ads-list').innerHTML = data.map(ad => `
             <div style="padding:10px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
-                <span>${ad.driver_name}: ${ad.from} → ${ad.to}</span>
+                <span><strong>${ad.driver_name}</strong> ${ad.from} → ${ad.to}</span>
                 <span>${ad.is_active ? '🟢' : '🔴'}</span>
-                ${ad.is_active ? `<button onclick="deleteAd(${ad.id},'taxi')" style="padding:4px 12px;border:none;border-radius:6px;background:#ef4444;color:#fff;cursor:pointer;">❌</button>` : ''}
+                ${ad.is_active ? `<button onclick="deleteAd(${ad.id},'taxi')" class="btn-red">❌</button>` : ''}
             </div>
         `).join('') || '<p>📭 Taksi e’lonlari yo‘q.</p>';
     } catch (e) { document.getElementById('taxi-ads-list').innerHTML = '<p>❌ Xatolik</p>'; }
 }
 
-// ----- PARCEL ADS -----
+// ---------- PARCEL ADS ----------
 async function loadParcelAds() {
     try {
         const data = await apiCall(`/api/admin/parcel-ads?telegram_id=${user.id}`);
         document.getElementById('parcel-ads-list').innerHTML = data.map(ad => `
             <div style="padding:10px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
-                <span>${ad.user_name}: ${ad.from} → ${ad.to}</span>
+                <span><strong>${ad.user_name}</strong> ${ad.from} → ${ad.to}</span>
                 <span>${ad.is_active ? '🟢' : '🔴'}</span>
-                ${ad.is_active ? `<button onclick="deleteAd(${ad.id},'parcel')" style="padding:4px 12px;border:none;border-radius:6px;background:#ef4444;color:#fff;cursor:pointer;">❌</button>` : ''}
+                ${ad.is_active ? `<button onclick="deleteAd(${ad.id},'parcel')" class="btn-red">❌</button>` : ''}
             </div>
         `).join('') || '<p>📭 Pochta e’lonlari yo‘q.</p>';
     } catch (e) { document.getElementById('parcel-ads-list').innerHTML = '<p>❌ Xatolik</p>'; }
 }
 
-// ----- ORDERS -----
+// ---------- ORDERS ----------
 async function loadAdminOrders() {
     try {
         const data = await apiCall(`/api/admin/orders?telegram_id=${user.id}`);
@@ -102,8 +106,8 @@ async function loadAdminOrders() {
                 <span>${o.status === 'waiting' ? '🟡' : o.status === 'completed' ? '✅' : '❌'}</span>
                 ${o.status === 'waiting' ? `
                     <span>
-                        <button onclick="updateOrder(${o.id},'completed')" style="padding:4px 10px;border:none;border-radius:6px;background:#10b981;color:#fff;cursor:pointer;">✅</button>
-                        <button onclick="updateOrder(${o.id},'cancelled')" style="padding:4px 10px;border:none;border-radius:6px;background:#ef4444;color:#fff;cursor:pointer;">❌</button>
+                        <button onclick="updateOrder(${o.id},'completed')" class="btn-green">✅</button>
+                        <button onclick="updateOrder(${o.id},'cancelled')" class="btn-red">❌</button>
                     </span>
                 ` : ''}
             </div>
@@ -111,7 +115,7 @@ async function loadAdminOrders() {
     } catch (e) { document.getElementById('admin-orders-list').innerHTML = '<p>❌ Xatolik</p>'; }
 }
 
-// ----- RATINGS -----
+// ---------- RATINGS ----------
 async function loadRatings() {
     try {
         const data = await apiCall(`/api/admin/ratings?telegram_id=${user.id}`);
@@ -119,40 +123,40 @@ async function loadRatings() {
             <div style="padding:10px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;">
                 <span>${r.driver_name}</span>
                 <span>⭐ ${r.avg_rating || 0}</span>
-                <span>${r.count || 0} ta</span>
+                <span>${r.count || 0} ta baho</span>
             </div>
         `).join('') || '<p>⭐ Reytinglar yo‘q.</p>';
     } catch (e) { document.getElementById('ratings-list').innerHTML = '<p>❌ Xatolik</p>'; }
 }
 
-// ----- COMPLAINTS -----
+// ---------- COMPLAINTS ----------
 async function loadComplaints() {
     try {
         const data = await apiCall(`/api/admin/complaints?telegram_id=${user.id}`);
         document.getElementById('complaints-list').innerHTML = data.map(c => `
             <div style="padding:10px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
-                <span>${c.user_name}: ${c.text}</span>
+                <span><strong>${c.user_name}</strong> ${c.text}</span>
                 <span>${c.status === 'pending' ? '🟡' : '✅'}</span>
-                ${c.status === 'pending' ? `<button onclick="resolveComplaint(${c.id})" style="padding:4px 12px;border:none;border-radius:6px;background:#10b981;color:#fff;cursor:pointer;">✅</button>` : ''}
+                ${c.status === 'pending' ? `<button onclick="resolveComplaint(${c.id})" class="btn-green">✅ Hal qilindi</button>` : ''}
             </div>
         `).join('') || '<p>📢 Shikoyatlar yo‘q.</p>';
     } catch (e) { document.getElementById('complaints-list').innerHTML = '<p>❌ Xatolik</p>'; }
 }
 
-// ----- CHANNELS -----
+// ---------- CHANNELS ----------
 async function loadChannels() {
     try {
         const data = await apiCall(`/api/admin/channels?telegram_id=${user.id}`);
         document.getElementById('channels-list').innerHTML = data.map((ch, i) => `
             <div style="padding:10px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
                 <span>${i+1}. @${ch.username}</span>
-                <button onclick="removeChannel('${ch.username}')" style="padding:4px 12px;border:none;border-radius:6px;background:#ef4444;color:#fff;cursor:pointer;">❌</button>
+                <button onclick="removeChannel('${ch.username}')" class="btn-red">❌</button>
             </div>
         `).join('') || '<p>🔗 Kanallar yo‘q.</p>';
     } catch (e) { document.getElementById('channels-list').innerHTML = '<p>❌ Xatolik</p>'; }
 }
 
-// ----- ACTIONS -----
+// ---------- ACTIONS ----------
 window.deleteAd = async function(id, type) {
     if (!confirm('O‘chirmoqchimisiz?')) return;
     try {
@@ -227,5 +231,50 @@ window.saveSettings = async function() {
     } catch (e) { alert('❌ Xatolik: ' + e.message); }
 };
 
-// ----- START -----
+// ---------- BANNER ----------
+window.uploadBanner = async function() {
+    const file = document.getElementById('banner-file').files[0];
+    if (!file) return alert('❌ Rasm tanlang!');
+    
+    // 3:4 nisbat tekshirish
+    const img = new Image();
+    img.onload = async function() {
+        if (Math.abs((img.width / img.height) - (3/4)) > 0.01) {
+            alert('❌ Rasm 3:4 nisbatda bo‘lishi kerak! (masalan: 300x400)');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('banner', file);
+        formData.append('telegram_id', user.id);
+        
+        try {
+            const res = await fetch('/api/admin/banner', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.url) {
+                document.getElementById('banner-preview').innerHTML = `<img src="${data.url}?t=${Date.now()}" style="width:200px; border-radius:12px;">`;
+                alert('✅ Banner yuklandi!');
+            }
+        } catch (e) {
+            alert('❌ Xatolik: ' + e.message);
+        }
+    };
+    img.src = URL.createObjectURL(file);
+};
+
+window.deleteBanner = async function() {
+    if (!confirm('❌ Bannerni o‘chirmoqchimisiz?')) return;
+    try {
+        await apiCall('/api/admin/banner', 'DELETE', { telegram_id: user.id });
+        document.getElementById('banner-preview').innerHTML = '';
+        document.getElementById('banner-image').style.display = 'none';
+        alert('✅ Banner o‘chirildi!');
+    } catch (e) {
+        alert('❌ Xatolik: ' + e.message);
+    }
+};
+
+// ---------- START ----------
 loadDashboard();
