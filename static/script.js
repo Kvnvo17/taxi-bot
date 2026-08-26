@@ -10,7 +10,7 @@ let currentTab = 'taxi';
 let currentFilter = 'all';
 let selectedTheme = 'light';
 
-// ---------- API CALL ----------
+// ---------- API ----------
 async function apiCall(url, method = 'GET', body = null) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body) opts.body = JSON.stringify(body);
@@ -50,10 +50,8 @@ document.addEventListener('DOMContentLoaded', function() {
             showPage(page);
         });
     });
-
     const formBack = document.getElementById('form-back');
     if (formBack) formBack.addEventListener('click', () => showPage('home'));
-    
     const resultBack = document.getElementById('order-result-back');
     if (resultBack) resultBack.addEventListener('click', () => showPage('home'));
 });
@@ -79,7 +77,7 @@ function showPage(name) {
     if (name === 'ads') loadAds();
 }
 
-// ---------- DROPDOWN FUNKSIYALARI ----------
+// ---------- DROPDOWN ----------
 function updateDistricts(prefix) {
     const regionSelect = document.getElementById(`${prefix}_region`);
     const districtSelect = document.getElementById(`${prefix}_district`);
@@ -123,7 +121,7 @@ function toggleParcelSize() {
     if (group) group.style.display = val === 'true' ? 'block' : 'none';
 }
 
-// ---------- TELEFON VALIDATSIYA ----------
+// ---------- TELEFON ----------
 function validatePhone(phone) {
     const clean = phone.replace(/\D/g, '');
     return clean.length === 9;
@@ -151,7 +149,6 @@ function showForm(type) {
     const formBody = document.getElementById('form-body');
     const formTitle = document.getElementById('form-title');
     if (!formBody || !formTitle) return;
-    
     const regionOptions = regionNames.map(r => `<option value="${r}">${r}</option>`).join('');
     let html = '';
 
@@ -180,29 +177,14 @@ function showForm(type) {
             </div>
             <div style="border-left:4px solid #4f46e5; padding-left:16px; margin:16px 0;">
                 <h4 style="margin-bottom:12px;">📍 Qayerdan</h4>
-                <div class="form-group">
-                    <label>Viloyat</label>
-                    <select id="from_region" onchange="updateDistricts('from')">${regionOptions}</select>
-                </div>
-                <div class="form-group">
-                    <label>Tuman</label>
-                    <select id="from_district" onchange="updateMahallas('from')"><option value="Hamma">Hamma</option></select>
-                </div>
-                <div class="form-group">
-                    <label>Mahalla</label>
-                    <select id="from_neighborhood"><option value="Hamma">Hamma</option></select>
-                </div>
+                <div class="form-group"><label>Viloyat</label><select id="from_region" onchange="updateDistricts('from')">${regionOptions}</select></div>
+                <div class="form-group"><label>Tuman</label><select id="from_district" onchange="updateMahallas('from')"><option value="Hamma">Hamma</option></select></div>
+                <div class="form-group"><label>Mahalla</label><select id="from_neighborhood"><option value="Hamma">Hamma</option></select></div>
             </div>
             <div style="border-left:4px solid #10b981; padding-left:16px; margin:16px 0;">
                 <h4 style="margin-bottom:12px;">📍 Qayerga</h4>
-                <div class="form-group">
-                    <label>Viloyat</label>
-                    <select id="to_region" onchange="updateDistricts('to')">${regionOptions}</select>
-                </div>
-                <div class="form-group">
-                    <label>Tuman</label>
-                    <select id="to_district"><option value="Hamma">Hamma</option></select>
-                </div>
+                <div class="form-group"><label>Viloyat</label><select id="to_region" onchange="updateDistricts('to')">${regionOptions}</select></div>
+                <div class="form-group"><label>Tuman</label><select id="to_district"><option value="Hamma">Hamma</option></select></div>
             </div>
             <div class="form-group">
                 <label>💰 Narx (so‘m)</label>
@@ -258,25 +240,13 @@ function showForm(type) {
             </div>
             <div style="border-left:4px solid #4f46e5; padding-left:16px; margin:16px 0;">
                 <h4 style="margin-bottom:12px;">📍 Qayerdan</h4>
-                <div class="form-group">
-                    <label>Viloyat</label>
-                    <select id="search_from_region" onchange="updateDistricts('search_from')">${regionOptions}</select>
-                </div>
-                <div class="form-group">
-                    <label>Tuman</label>
-                    <select id="search_from_district"><option value="Hamma">Hamma</option></select>
-                </div>
+                <div class="form-group"><label>Viloyat</label><select id="search_from_region" onchange="updateDistricts('search_from')">${regionOptions}</select></div>
+                <div class="form-group"><label>Tuman</label><select id="search_from_district"><option value="Hamma">Hamma</option></select></div>
             </div>
             <div style="border-left:4px solid #10b981; padding-left:16px; margin:16px 0;">
                 <h4 style="margin-bottom:12px;">📍 Qayerga</h4>
-                <div class="form-group">
-                    <label>Viloyat</label>
-                    <select id="search_to_region" onchange="updateDistricts('search_to')">${regionOptions}</select>
-                </div>
-                <div class="form-group">
-                    <label>Tuman</label>
-                    <select id="search_to_district"><option value="Hamma">Hamma</option></select>
-                </div>
+                <div class="form-group"><label>Viloyat</label><select id="search_to_region" onchange="updateDistricts('search_to')">${regionOptions}</select></div>
+                <div class="form-group"><label>Tuman</label><select id="search_to_district"><option value="Hamma">Hamma</option></select></div>
             </div>
             <button class="primary-btn" onclick="searchTaxi()">🔍 Taksi qidirish</button>
             <div id="search-results" style="margin-top:16px;"></div>
@@ -290,25 +260,13 @@ function showForm(type) {
         html = `
             <div style="border-left:4px solid #4f46e5; padding-left:16px; margin:16px 0;">
                 <h4 style="margin-bottom:12px;">📍 Qayerdan</h4>
-                <div class="form-group">
-                    <label>Viloyat</label>
-                    <select id="ps_from_region" onchange="updateDistricts('ps_from')">${regionOptions}</select>
-                </div>
-                <div class="form-group">
-                    <label>Tuman</label>
-                    <select id="ps_from_district"><option value="Hamma">Hamma</option></select>
-                </div>
+                <div class="form-group"><label>Viloyat</label><select id="ps_from_region" onchange="updateDistricts('ps_from')">${regionOptions}</select></div>
+                <div class="form-group"><label>Tuman</label><select id="ps_from_district"><option value="Hamma">Hamma</option></select></div>
             </div>
             <div style="border-left:4px solid #10b981; padding-left:16px; margin:16px 0;">
                 <h4 style="margin-bottom:12px;">📍 Qayerga</h4>
-                <div class="form-group">
-                    <label>Viloyat</label>
-                    <select id="ps_to_region" onchange="updateDistricts('ps_to')">${regionOptions}</select>
-                </div>
-                <div class="form-group">
-                    <label>Tuman</label>
-                    <select id="ps_to_district"><option value="Hamma">Hamma</option></select>
-                </div>
+                <div class="form-group"><label>Viloyat</label><select id="ps_to_region" onchange="updateDistricts('ps_to')">${regionOptions}</select></div>
+                <div class="form-group"><label>Tuman</label><select id="ps_to_district"><option value="Hamma">Hamma</option></select></div>
             </div>
             <div class="form-group">
                 <label>📦 Hajmi</label>
@@ -342,7 +300,6 @@ function showForm(type) {
 window.submitTaxiAd = async function() {
     const phoneInput = document.getElementById('phone');
     const phone = phoneInput ? phoneInput.value.trim() : '';
-    
     if (!validatePhone(phone)) {
         const err = document.getElementById('phone-error');
         if (err) err.style.display = 'block';
@@ -351,7 +308,7 @@ window.submitTaxiAd = async function() {
     }
     const err = document.getElementById('phone-error');
     if (err) err.style.display = 'none';
-    
+
     const from_region = document.getElementById('from_region').value;
     const to_region = document.getElementById('to_region').value;
     if (from_region === to_region && from_region !== 'Hamma') {
@@ -396,7 +353,7 @@ window.searchTaxi = async function() {
         alert('❌ Qayerdan va qayerga bir xil bo‘lishi mumkin emas!');
         return;
     }
-    
+
     const from_loc = {
         region: from_region,
         district: document.getElementById('search_from_district').value
@@ -436,6 +393,10 @@ window.searchTaxi = async function() {
 window.orderTaxi = async function(adId) {
     try {
         const ad = await apiCall(`/api/taxi/ad/${adId}`);
+        if (ad.user_id === user.id) {
+            alert('❌ O‘zingizning e’loningizga buyurtma bera olmaysiz!');
+            return;
+        }
         showOrderResult({
             driver_name: ad.driver_name || 'Noma\'lum',
             driver_phone: ad.phone || '+998901234567',
@@ -446,11 +407,11 @@ window.orderTaxi = async function(adId) {
             price: ad.price || 0,
             type: 'taksi'
         });
-        apiCall('/api/order/create', 'POST', {
+        await apiCall('/api/order/create', 'POST', {
             taxi_ad_id: adId,
             passenger_telegram_id: user.id,
             type: 'taxi'
-        }).catch(() => {});
+        });
     } catch (e) {
         alert('❌ Xatolik: ' + e.message);
     }
@@ -499,6 +460,10 @@ window.submitParcelSend = async function() {
 window.orderParcel = async function(adId) {
     try {
         const ad = await apiCall(`/api/taxi/ad/${adId}`);
+        if (ad.user_id === user.id) {
+            alert('❌ O‘zingizning e’loningizga buyurtma bera olmaysiz!');
+            return;
+        }
         showOrderResult({
             driver_name: ad.driver_name || 'Noma\'lum',
             driver_phone: ad.phone || '+998901234567',
@@ -509,11 +474,11 @@ window.orderParcel = async function(adId) {
             price: ad.price || 0,
             type: 'pochta'
         });
-        apiCall('/api/order/create', 'POST', {
+        await apiCall('/api/order/create', 'POST', {
             taxi_ad_id: adId,
             passenger_telegram_id: user.id,
             type: 'parcel'
-        }).catch(() => {});
+        });
     } catch (e) {
         alert('❌ Xatolik: ' + e.message);
     }
@@ -688,11 +653,27 @@ async function loadProfile() {
             <div id="my-ads-list"></div>
         `;
         if (data.theme) setTheme(data.theme);
+        loadBanner();
     } catch (e) {
         container.innerHTML = '<p>❌ Profilni yuklashda xatolik.</p>';
     }
 }
 
+// ---------- BANNER ----------
+async function loadBanner() {
+    try {
+        const res = await apiCall(`/api/banner/${user.id}`);
+        const img = document.getElementById('banner-image');
+        if (res.url) {
+            img.src = res.url + '?t=' + Date.now();
+            img.style.display = 'block';
+        } else {
+            img.style.display = 'none';
+        }
+    } catch (e) {}
+}
+
+// ---------- TAHRIRLASH ----------
 window.editField = function(field, currentValue) {
     const labels = {
         phone: '📞 Telefon raqam',
@@ -724,7 +705,7 @@ window.editField = function(field, currentValue) {
     }
 };
 
-// ---------- TIL TANLASH ----------
+// ---------- TIL ----------
 window.editLanguage = function() {
     const langs = [
         { code: 'uz', name: '🇺🇿 O\'zbekcha (Lotin)' },
@@ -767,7 +748,7 @@ window.saveLanguage = function() {
     .catch(() => alert('❌ Xatolik'));
 };
 
-// ---------- KO'RINISH TANLASH ----------
+// ---------- KO'RINISH ----------
 window.editTheme = function() {
     const html = `
         <div class="theme-select">
@@ -833,7 +814,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// ---------- O'Z E'LONLARIM ----------
+// ---------- O'Z E'LONLARI ----------
 window.loadMyAds = async function(type) {
     const container = document.getElementById('my-ads-list');
     if (!container) return;
