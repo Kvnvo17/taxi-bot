@@ -471,7 +471,9 @@ async def create_order(order: OrderCreate):
             passenger.telegram_id,
             f"✅ Buyurtma qabul qilindi!\n\n"
             # NOTO'G'RI:
-f"Haydovchi: {driver.first_name if driver else 'Noma'lum'}\n"
+unknown = "Noma'lum"
+# ... keyin:
+f"Haydovchi: {driver.first_name if driver else unknown}\n"
 
 # TO'G'RI (3 xil usul):
 # Usul 1 - qo'shtirnoq bilan
