@@ -380,7 +380,7 @@ async def search_taxi(from_location: str, to_location: str, people: int = 1):
         query = select(TaxiAd).where(
             TaxiAd.is_active == True,
             TaxiAd.seats >= people,
-            TaxiAd.expires_at > datetime.utcnow()
+    
         )
         result = await session.execute(query)
         ads = result.scalars().all()
