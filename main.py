@@ -1,5 +1,6 @@
 # ============================================================
-# main.py – FastAPI Backend (TO‘LIQ VERSIYA)
+# main.py – Taksi Raqami Bot (FastAPI Backend)
+# To‘liq va ishlaydigan versiya
 # ============================================================
 
 import os
@@ -7,14 +8,14 @@ import json
 import shutil
 import asyncio
 from datetime import datetime, timedelta
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 
 from database import (
     AsyncSessionLocal, User, TaxiAd, ParcelAd, Order,
@@ -24,9 +25,10 @@ from database import (
 from config import ADMIN_IDS
 from bot import bot, schedule_rating
 
+# ==================== APP ====================
 app = FastAPI()
 
-# ===== CORS =====
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,12 +37,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ===== STATIC =====
+# Static fayllar
 UPLOAD_DIR = "static/banners"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# ===== MODELS =====
+# ==================== MODELS ====================
 class TaxiAdCreate(BaseModel):
     wait_time: int
     seats: int
@@ -57,7 +59,13 @@ class OrderCreate(BaseModel):
     passenger_telegram_id: int
     type: str
 
-# ===== ADMIN TEKSHIRUV =====
+class ParcelOrderCreate(BaseModel):
+    from_location: dict
+    to_location: dict
+    size: str
+    phone: str
+
+# ==================== ADMIN TEKSHIRUV ====================
 async def is_admin(telegram_id: int) -> bool:
     async with AsyncSessionLocal() as session:
         result = await session.execute(
@@ -65,7 +73,7 @@ async def is_admin(telegram_id: int) -> bool:
         )
         return result.scalar_one_or_none() is not None
 
-# ===== API ENDPOINTS =====
+# ==================== ADMIN API ====================
 @app.get("/api/admin/check")
 async def admin_check(telegram_id: int):
     return {"is_admin": await is_admin(telegram_id)}
@@ -99,7 +107,13 @@ async def admin_users(telegram_id: int):
         raise HTTPException(403, "Admin emas")
     async with AsyncSessionLocal() as session:
         users = await session.execute(select(User))
-        return [{"id": u.id, "name": u.first_name, "phone": u.phone, "rating": u.rating, "is_active": True} for u in users.scalars().all()]
+        return [{
+            "id": u.id,
+            "name": u.first_name,
+            "phone": u.phone,
+            "rating": u.rating,
+            "is_active": True
+        } for u in users.scalars().all()]
 
 @app.get("/api/admin/taxi-ads")
 async def admin_taxi_ads(telegram_id: int):
@@ -143,9 +157,7 @@ async def admin_orders(telegram_id: int):
     if not await is_admin(telegram_id):
         raise HTTPException(403, "Admin emas")
     async with AsyncSessionLocal() as session:
-        orders = await session.execute(
-            select(Order).order_by(Order.created_at.desc())
-        )
+        orders = await session.execute(select(Order).order_by(Order.created_at.desc()))
         result = []
         for o in orders.scalars().all():
             passenger = await session.get(User, o.passenger_id) if o.passenger_id else None
@@ -181,9 +193,7 @@ async def admin_complaints(telegram_id: int):
     if not await is_admin(telegram_id):
         raise HTTPException(403, "Admin emas")
     async with AsyncSessionLocal() as session:
-        complaints = await session.execute(
-            select(Complaint).order_by(Complaint.created_at.desc())
-        )
+        complaints = await session.execute(select(Complaint).order_by(Complaint.created_at.desc()))
         result = []
         for c in complaints.scalars().all():
             user = await session.get(User, c.user_id)
@@ -191,7 +201,7 @@ async def admin_complaints(telegram_id: int):
                 "id": c.id,
                 "user_name": user.first_name if user else "Noma'lum",
                 "text": c.text,
-                "status": "pending"  # status maydoni qo'shilmagan, shuning uchun default
+                "status": "pending"
             })
         return result
 
@@ -246,10 +256,9 @@ async def admin_broadcast(data: dict, telegram_id: int):
 async def admin_settings(data: dict, telegram_id: int):
     if not await is_admin(telegram_id):
         raise HTTPException(403, "Admin emas")
-    # Settings saqlash
     return {"status": "ok"}
 
-# ===== BANNER =====
+# ==================== BANNER ====================
 @app.post("/api/admin/banner")
 async def upload_banner(
     telegram_id: int = Form(...),
@@ -257,7 +266,6 @@ async def upload_banner(
 ):
     if not await is_admin(telegram_id):
         raise HTTPException(403, "Admin emas")
-    # 3:4 nisbat tekshirish uchun PIL yoki imagesize ishlatilishi kerak
     file_path = f"{UPLOAD_DIR}/banner_{telegram_id}.jpg"
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(banner.file, buffer)
@@ -279,7 +287,7 @@ async def get_banner(telegram_id: int):
         return {"url": f"/static/banners/banner_{telegram_id}.jpg"}
     return {"url": None}
 
-# ===== ASOSIY API =====
+# ==================== ASOSIY API ====================
 @app.get("/api/user/{telegram_id}")
 async def get_user(telegram_id: int):
     async with AsyncSessionLocal() as session:
@@ -352,8 +360,8 @@ async def get_taxi_ad(ad_id: int):
         driver = await session.get(User, ad.user_id)
         return {
             "id": ad.id,
-            "driver_name": driver.first_name if driver else "Noma'lum",
             "user_id": ad.user_id,
+            "driver_name": driver.first_name if driver else "Noma'lum",
             "phone": ad.phone,
             "rating": driver.rating if driver else 0,
             "from": ad.from_location,
@@ -428,7 +436,7 @@ async def create_order(order: OrderCreate):
         
         # O'ziga o'zi buyurtma bermaslik
         if ad.user_id == passenger.id:
-            raise HTTPException(400, "❌ O‘zingizning e’loningizga buyurtma bera olmaysiz!")
+            raise HTTPException(400, "❌ O'zingizning e'loningizga buyurtma bera olmaysiz!")
         
         # Takroriy buyurtma
         existing = await session.execute(
@@ -457,7 +465,7 @@ async def create_order(order: OrderCreate):
             await bot.send_message(
                 driver.telegram_id,
                 f"🚖 Yangi buyurtma!\n\n"
-                f"Yo‘lovchi: {passenger.first_name}\n"
+                f"Yo'lovchi: {passenger.first_name}\n"
                 f"Telefon: {passenger.phone}\n"
                 f"Qayerdan: {ad.from_location}\n"
                 f"Qayerga: {ad.to_location}\n"
@@ -467,27 +475,17 @@ async def create_order(order: OrderCreate):
                 f"Buyurtma ID: {new_order.id}"
             )
         
+        # Yo'lovchiga xabar
+        unknown = "Noma'lum"
         await bot.send_message(
             passenger.telegram_id,
-            f"✅ Buyurtma qabul qilindi\n\n"
-            # NOTO'G'RI:
-unknown = "Nomalum"
-# ... keyin:
-f"Haydovchi: {driver.first_name if driver else unknown}\n"
-
-# TO'G'RI (3 xil usul):
-# Usul 1 - qo'shtirnoq bilan
-f"Haydovchi: {driver.first_name if driver else 'Noma\'lum'}\n"
-
-# Usul 2 - ikki xil qo'shtirnoq
-f'Haydovchi: {driver.first_name if driver else "Noma\'lum"}\n'
-
-# Usul 3 - eng yaxshi (tavsiya)
-f"Haydovchi: {driver.first_name if driver else 'Noma\\'lum'}\n"
+            f"✅ Buyurtma qabul qilindi!\n\n"
+            f"Haydovchi: {driver.first_name if driver else unknown}\n"
             f"Telefon: {ad.phone}\n"
-            f"Iltimos, haydovchi bilan bog‘laning."
+            f"Iltimos, haydovchi bilan bog'laning."
         )
         
+        # Reyting so'rovini rejalashtirish
         asyncio.create_task(schedule_rating(new_order.id, driver.id if driver else None, passenger.id))
         return {"order_id": new_order.id, "status": "created"}
 
@@ -586,7 +584,7 @@ async def delete_parcel_ad(ad_id: int, telegram_id: int):
         return {"status": "ok"}
 
 @app.post("/api/parcel/order")
-async def create_parcel_order(data: dict, telegram_id: int):
+async def create_parcel_order(data: ParcelOrderCreate, telegram_id: int):
     async with AsyncSessionLocal() as session:
         user = await session.execute(
             select(User).where(User.telegram_id == telegram_id)
@@ -594,29 +592,29 @@ async def create_parcel_order(data: dict, telegram_id: int):
         user = user.scalar_one_or_none()
         if not user:
             raise HTTPException(404, "User not found")
+        if not user.phone:
+            raise HTTPException(400, "Telefon raqam profilingizda mavjud emas")
         parcel_ad = ParcelAd(
             user_id=user.id,
-            from_location=json.dumps(data["from_location"]),
-            to_location=json.dumps(data["to_location"]),
-            size=data["size"],
-            phone=data["phone"],
+            from_location=json.dumps(data.from_location),
+            to_location=json.dumps(data.to_location),
+            size=data.size,
+            phone=data.phone or user.phone,
             expires_at=datetime.utcnow() + timedelta(hours=24)
         )
         session.add(parcel_ad)
         await session.commit()
         return {"id": parcel_ad.id, "status": "created"}
 
-# ===== HEALTH =====
+# ==================== SAHIFALAR ====================
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
-# ===== ROOT =====
 @app.get("/")
 async def root():
     return {"message": "Taksi Raqami Bot API"}
 
-# ===== WEBAPP =====
 @app.get("/webapp")
 async def webapp():
     return FileResponse("static/index.html")
@@ -625,20 +623,20 @@ async def webapp():
 async def admin_page():
     return FileResponse("static/admin.html")
 
-# ===== STARTUP =====
+# ==================== STARTUP ====================
 @app.on_event("startup")
 async def startup():
     await init_db()
     asyncio.create_task(start_bot())
+    asyncio.create_task(clean_expired_ads())
 
 async def start_bot():
     from bot import dp
     await dp.start_polling(bot)
 
-# ===== CLEANUP EXPIRED ADS =====
 async def clean_expired_ads():
     while True:
-        await asyncio.sleep(600)  # 10 daqiqa
+        await asyncio.sleep(600)
         async with AsyncSessionLocal() as session:
             expired = await session.execute(
                 select(TaxiAd).where(
@@ -649,7 +647,3 @@ async def clean_expired_ads():
             for ad in expired.scalars().all():
                 ad.is_active = False
             await session.commit()
-
-@app.on_event("startup")
-async def start_cleaner():
-    asyncio.create_task(clean_expired_ads())
