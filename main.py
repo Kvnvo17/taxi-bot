@@ -471,7 +471,7 @@ async def create_order(order: OrderCreate):
             passenger.telegram_id,
             f"✅ Buyurtma qabul qilindi!\n\n"
             # NOTO'G'RI:
-unknown = "Noma'lum"
+unknown = "Nomalum"
 # ... keyin:
 f"Haydovchi: {driver.first_name if driver else unknown}\n"
 
