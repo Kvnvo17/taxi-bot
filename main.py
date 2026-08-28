@@ -469,7 +469,7 @@ async def create_order(order: OrderCreate):
         
         await bot.send_message(
             passenger.telegram_id,
-            f"✅ Buyurtma qabul qilindi!\n\n"
+            f"✅ Buyurtma qabul qilindi\n\n"
             # NOTO'G'RI:
 unknown = "Nomalum"
 # ... keyin:
